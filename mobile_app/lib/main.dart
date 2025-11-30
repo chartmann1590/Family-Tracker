@@ -4,14 +4,29 @@ import 'services/auth_service.dart';
 import 'services/api_service.dart';
 import 'services/location_service.dart';
 import 'services/websocket_service.dart';
+import 'services/server_config_service.dart';
+import 'services/logger_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/family_provider.dart';
 import 'providers/location_provider.dart';
 import 'providers/message_provider.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/server_config_screen.dart';
 
 void main() {
+  final logger = LoggerService();
+
+  // Set up error handlers
+  FlutterError.onError = (FlutterErrorDetails details) {
+    logger.fatal(
+      'Flutter Error: ${details.exceptionAsString()}',
+      details.exception,
+      details.stack,
+    );
+    FlutterError.presentError(details);
+  };
+
   runApp(const FamilyTrackerApp());
 }
 
@@ -96,11 +111,81 @@ class FamilyTrackerApp extends StatelessWidget {
                 filled: true,
               ),
             ),
-            home: const AuthWrapper(),
+            home: const AppInitializer(),
           );
         },
       ),
     );
+  }
+}
+
+class AppInitializer extends StatefulWidget {
+  const AppInitializer({super.key});
+
+  @override
+  State<AppInitializer> createState() => _AppInitializerState();
+}
+
+class _AppInitializerState extends State<AppInitializer> {
+  final _serverConfigService = ServerConfigService();
+  final _logger = LoggerService();
+  bool _isChecking = true;
+  bool _isConfigured = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkServerConfig();
+  }
+
+  Future<void> _checkServerConfig() async {
+    try {
+      _logger.info('Checking server configuration...');
+      final isConfigured = await _serverConfigService.isConfigured();
+
+      setState(() {
+        _isConfigured = isConfigured;
+        _isChecking = false;
+      });
+
+      _logger.info('Server configured: $isConfigured');
+    } catch (e) {
+      _logger.error('Error checking server configuration', e);
+      setState(() {
+        _isConfigured = false;
+        _isChecking = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isChecking) {
+      return const Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.family_restroom,
+                size: 100,
+                color: Color(0xFF6366F1),
+              ),
+              SizedBox(height: 24),
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Initializing...'),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (!_isConfigured) {
+      return const ServerConfigScreen();
+    }
+
+    return const AuthWrapper();
   }
 }
 

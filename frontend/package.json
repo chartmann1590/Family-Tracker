@@ -19,7 +19,8 @@
     "zustand": "^4.5.0",
     "lucide-react": "^0.316.0",
     "clsx": "^2.1.0",
-    "react-hot-toast": "^2.4.1"
+    "react-hot-toast": "^2.4.1",
+    "qrcode.react": "^4.1.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.48",

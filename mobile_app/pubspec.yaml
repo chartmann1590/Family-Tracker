@@ -61,6 +61,24 @@ dependencies:
   # Time formatting
   intl: ^0.19.0
 
+  # Logging
+  logger: ^2.0.0
+
+  # Email functionality
+  url_launcher: ^6.2.2
+
+  # QR code scanning (for future use)
+  qr_flutter: ^4.1.0
+
+  # Share/export logs
+  share_plus: ^7.2.1
+
+  # Path provider for log file storage
+  path_provider: ^2.1.1
+
+  # App info
+  package_info_plus: ^8.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

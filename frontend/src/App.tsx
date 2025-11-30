@@ -8,7 +8,7 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
 import FamilyPage from './pages/FamilyPage';
-import OwnTracksSetupPage from './pages/OwnTracksSetupPage';
+import MobileConfigPage from './pages/MobileConfigPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingScreen from './components/LoadingScreen';
 
@@ -66,7 +66,7 @@ function App() {
             path="/owntracks"
             element={
               <ProtectedRoute>
-                <OwnTracksSetupPage />
+                <MobileConfigPage />
               </ProtectedRoute>
             }
           />

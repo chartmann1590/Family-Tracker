@@ -5,11 +5,13 @@ import '../models/location.dart';
 import '../services/api_service.dart';
 import '../services/location_service.dart';
 import '../services/websocket_service.dart';
+import '../services/logger_service.dart';
 
 class LocationProvider with ChangeNotifier {
   final ApiService _apiService;
   final LocationService _locationService;
   final WebSocketService _webSocketService;
+  final LoggerService _logger = LoggerService();
 
   List<FamilyMemberLocation> _familyLocations = [];
   Position? _currentPosition;
@@ -66,7 +68,8 @@ class LocationProvider with ChangeNotifier {
       }
 
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       print('Error handling location update: $e');
     }
   }
@@ -80,7 +83,8 @@ class LocationProvider with ChangeNotifier {
       final locations = await _apiService.getFamilyLocations();
       _familyLocations = locations;
       _setLoading(false);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       _error = e.toString();
       _setLoading(false);
     }
@@ -92,7 +96,8 @@ class LocationProvider with ChangeNotifier {
       final position = await _locationService.getCurrentPosition();
       _currentPosition = position;
       notifyListeners();
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       print('Error getting current position: $e');
     }
   }
@@ -117,7 +122,8 @@ class LocationProvider with ChangeNotifier {
       _isTracking = true;
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       _error = e.toString();
       notifyListeners();
       return false;
@@ -139,7 +145,8 @@ class LocationProvider with ChangeNotifier {
       await _locationService.updateLocationOnce();
       await updateCurrentPosition();
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       _error = e.toString();
       notifyListeners();
       return false;
@@ -165,7 +172,8 @@ class LocationProvider with ChangeNotifier {
   FamilyMemberLocation? getLocationForUser(int userId) {
     try {
       return _familyLocations.firstWhere((loc) => loc.userId == userId);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       return null;
     }
   }

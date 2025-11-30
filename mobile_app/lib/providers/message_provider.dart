@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import '../models/message.dart';
 import '../services/api_service.dart';
 import '../services/websocket_service.dart';
+import '../services/logger_service.dart';
 
 class MessageProvider with ChangeNotifier {
   final ApiService _apiService;
   final WebSocketService _webSocketService;
+  final LoggerService _logger = LoggerService();
 
   List<Message> _messages = [];
   MessagePagination? _pagination;
@@ -57,7 +59,8 @@ class MessageProvider with ChangeNotifier {
 
         notifyListeners();
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       print('Error handling new message: $e');
     }
   }
@@ -77,7 +80,8 @@ class MessageProvider with ChangeNotifier {
       _messages = result['messages'] as List<Message>;
       _pagination = result['pagination'] as MessagePagination;
       _setLoading(false);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       _error = e.toString();
       _setLoading(false);
     }
@@ -103,7 +107,8 @@ class MessageProvider with ChangeNotifier {
       _messages.addAll(newMessages);
       _pagination = result['pagination'] as MessagePagination;
       _setLoading(false);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       _error = e.toString();
       _setLoading(false);
     }
@@ -140,7 +145,8 @@ class MessageProvider with ChangeNotifier {
       _isSending = false;
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       _error = e.toString();
       _isSending = false;
       notifyListeners();
@@ -167,7 +173,8 @@ class MessageProvider with ChangeNotifier {
 
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       _error = e.toString();
       notifyListeners();
       return false;
@@ -178,7 +185,8 @@ class MessageProvider with ChangeNotifier {
   Message? getMessageById(int messageId) {
     try {
       return _messages.firstWhere((m) => m.id == messageId);
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error("Error in provider", e, stackTrace);
       return null;
     }
   }

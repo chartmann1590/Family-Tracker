@@ -5,9 +5,12 @@ import '../providers/family_provider.dart';
 import '../providers/location_provider.dart';
 import '../providers/message_provider.dart';
 import '../services/websocket_service.dart';
+import '../services/logger_service.dart';
 import 'map_screen.dart';
 import 'family_screen.dart';
 import 'messages_screen.dart';
+import 'settings_screen.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -19,6 +22,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
   bool _initialized = false;
+  final _logger = LoggerService();
 
   final List<Widget> _screens = const [
     MapScreen(),
@@ -29,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _logger.logScreenView('HomeScreen');
     _initializeApp();
   }
 
@@ -65,6 +70,15 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Family Tracker'),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              _logger.logTap('HomeScreen', 'MenuButton');
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
         actions: [
           // WebSocket status indicator
           Consumer<WebSocketService>(
@@ -108,60 +122,9 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
-          // Settings menu
-          PopupMenuButton<String>(
-            onSelected: (value) async {
-              if (value == 'logout') {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Logout'),
-                    content: const Text('Are you sure you want to logout?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: const Text('Cancel'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(context, true),
-                        child: const Text('Logout'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirm == true && mounted) {
-                  // Stop location tracking
-                  await context.read<LocationProvider>().stopTracking();
-
-                  // Disconnect WebSocket
-                  await context.read<WebSocketService>().disconnect();
-
-                  // Clear provider data
-                  context.read<FamilyProvider>().clearFamily();
-                  context.read<LocationProvider>().clearLocations();
-                  context.read<MessageProvider>().clearMessages();
-
-                  // Logout
-                  await context.read<AuthProvider>().logout();
-                }
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('Logout'),
-                  ],
-                ),
-              ),
-            ],
-          ),
         ],
       ),
+      drawer: _buildDrawer(context),
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
@@ -188,6 +151,132 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: Icon(Icons.message_outlined),
             selectedIcon: Icon(Icons.message),
             label: 'Messages',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawer(BuildContext context) {
+    final theme = Theme.of(context);
+    final authProvider = context.watch<AuthProvider>();
+
+    return Drawer(
+      child: Column(
+        children: [
+          UserAccountsDrawerHeader(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primaryContainer,
+            ),
+            accountName: Text(
+              authProvider.user?.name ?? 'User',
+              style: TextStyle(
+                color: theme.colorScheme.onPrimaryContainer,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            accountEmail: Text(
+              authProvider.user?.email ?? '',
+              style: TextStyle(
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
+            ),
+            currentAccountPicture: CircleAvatar(
+              backgroundColor: theme.colorScheme.primary,
+              child: Text(
+                (authProvider.user?.name ?? 'U')[0].toUpperCase(),
+                style: TextStyle(
+                  fontSize: 32,
+                  color: theme.colorScheme.onPrimary,
+                ),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Settings'),
+            onTap: () {
+              _logger.logTap('HomeScreen', 'SettingsMenuItem');
+              Navigator.pop(context); // Close drawer
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.info),
+            title: const Text('About'),
+            onTap: () async {
+              _logger.logTap('HomeScreen', 'AboutMenuItem');
+              Navigator.pop(context); // Close drawer
+
+              final packageInfo = await PackageInfo.fromPlatform();
+
+              if (context.mounted) {
+                showAboutDialog(
+                  context: context,
+                  applicationName: 'Family Tracker',
+                  applicationVersion: '${packageInfo.version} (${packageInfo.buildNumber})',
+                  applicationIcon: Icon(
+                    Icons.family_restroom,
+                    size: 64,
+                    color: theme.colorScheme.primary,
+                  ),
+                  applicationLegalese: '© 2024 Family Tracker\nReal-time family location tracking and messaging',
+                );
+              }
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text('Logout', style: TextStyle(color: Colors.red)),
+            onTap: () async {
+              _logger.logTap('HomeScreen', 'LogoutMenuItem');
+              Navigator.pop(context); // Close drawer
+
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Logout'),
+                  content: const Text('Are you sure you want to logout?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Cancel'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.red,
+                      ),
+                      child: const Text('Logout'),
+                    ),
+                  ],
+                ),
+              );
+
+              if (confirm == true && mounted) {
+                _logger.logAuthEvent('User logged out');
+
+                // Stop location tracking
+                await context.read<LocationProvider>().stopTracking();
+
+                // Disconnect WebSocket
+                await context.read<WebSocketService>().disconnect();
+
+                // Clear provider data
+                context.read<FamilyProvider>().clearFamily();
+                context.read<LocationProvider>().clearLocations();
+                context.read<MessageProvider>().clearMessages();
+
+                // Logout
+                await context.read<AuthProvider>().logout();
+              }
+            },
           ),
         ],
       ),

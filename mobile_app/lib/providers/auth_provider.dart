@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/user.dart';
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
+import '../services/logger_service.dart';
 
 enum AuthState {
   initial,
@@ -13,6 +14,7 @@ enum AuthState {
 class AuthProvider with ChangeNotifier {
   final ApiService _apiService;
   final AuthService _authService;
+  final LoggerService _logger = LoggerService();
 
   User? _user;
   AuthState _state = AuthState.initial;
@@ -29,11 +31,13 @@ class AuthProvider with ChangeNotifier {
   // Check if user is already authenticated
   Future<void> checkAuthentication() async {
     _setState(AuthState.loading);
+    _logger.info('AuthProvider: Checking authentication...');
 
     try {
       final hasToken = await _authService.hasToken();
 
       if (hasToken) {
+        _logger.info('AuthProvider: Token found, fetching user data');
         final user = await _apiService.getCurrentUser();
         _user = user;
         await _authService.saveUserData(
@@ -41,12 +45,14 @@ class AuthProvider with ChangeNotifier {
           email: user.email,
           name: user.name,
         );
+        _logger.logAuthEvent('User authenticated: ${user.email}');
         _setState(AuthState.authenticated);
       } else {
+        _logger.info('AuthProvider: No token found');
         _setState(AuthState.unauthenticated);
       }
-    } catch (e) {
-      print('Error checking authentication: $e');
+    } catch (e, stackTrace) {
+      _logger.error('AuthProvider: Error checking authentication', e, stackTrace);
       await _authService.clearAll();
       _setState(AuthState.unauthenticated);
     }
@@ -56,6 +62,7 @@ class AuthProvider with ChangeNotifier {
   Future<bool> login(String email, String password) async {
     _setState(AuthState.loading);
     _error = null;
+    _logger.info('AuthProvider: Attempting login for $email');
 
     try {
       final result = await _apiService.login(email: email, password: password);
@@ -70,9 +77,11 @@ class AuthProvider with ChangeNotifier {
       );
 
       _user = user;
+      _logger.logAuthEvent('Login successful: $email');
       _setState(AuthState.authenticated);
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error('AuthProvider: Login failed for $email', e, stackTrace);
       _error = e.toString();
       _setState(AuthState.unauthenticated);
       return false;
@@ -83,6 +92,7 @@ class AuthProvider with ChangeNotifier {
   Future<bool> register(String email, String password, String name) async {
     _setState(AuthState.loading);
     _error = null;
+    _logger.info('AuthProvider: Attempting registration for $email');
 
     try {
       final result = await _apiService.register(
@@ -101,9 +111,11 @@ class AuthProvider with ChangeNotifier {
       );
 
       _user = user;
+      _logger.logAuthEvent('Registration successful: $email');
       _setState(AuthState.authenticated);
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.error('AuthProvider: Registration failed for $email', e, stackTrace);
       _error = e.toString();
       _setState(AuthState.unauthenticated);
       return false;
@@ -113,6 +125,7 @@ class AuthProvider with ChangeNotifier {
   // Refresh user data
   Future<void> refreshUser() async {
     try {
+      _logger.info('AuthProvider: Refreshing user data');
       final user = await _apiService.getCurrentUser();
       _user = user;
       await _authService.saveUserData(
@@ -121,13 +134,14 @@ class AuthProvider with ChangeNotifier {
         name: user.name,
       );
       notifyListeners();
-    } catch (e) {
-      print('Error refreshing user: $e');
+    } catch (e, stackTrace) {
+      _logger.error('AuthProvider: Error refreshing user', e, stackTrace);
     }
   }
 
   // Logout
   Future<void> logout() async {
+    _logger.logAuthEvent('User logging out');
     await _authService.clearAll();
     _user = null;
     _error = null;

@@ -88,6 +88,24 @@ export async function initDatabase() {
       END $$;
     `);
 
+    // Messages table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        message TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create index for faster message queries
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_messages_family_created
+      ON messages(family_id, created_at DESC)
+    `);
+
     await client.query('COMMIT');
     console.log('✅ Database schema initialized successfully');
   } catch (error) {

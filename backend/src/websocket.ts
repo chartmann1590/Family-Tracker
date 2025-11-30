@@ -141,3 +141,19 @@ export function broadcastToUser(userId: number, data: any) {
     }
   });
 }
+
+export function broadcastMessage(familyId: number, data: any) {
+  const connections = familyConnections.get(familyId);
+  if (!connections) return;
+
+  const message = JSON.stringify({
+    type: 'message',
+    data,
+  });
+
+  connections.forEach((ws) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(message);
+    }
+  });
+}

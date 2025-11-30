@@ -12,6 +12,7 @@ import locationRoutes from './routes/locations';
 import familyRoutes from './routes/families';
 import owntracksRoutes from './routes/owntracks';
 import adminRoutes from './routes/admin';
+import messageRoutes from './routes/messages';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.use('/api/locations', locationRoutes);
 app.use('/api/families', familyRoutes);
 app.use('/api/owntracks', owntracksRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/messages', messageRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

@@ -288,26 +288,24 @@ export default function FamilyPage() {
             </div>
           </div>
 
-          {/* OwnTracks Setup */}
+          {/* Mobile App Setup */}
           <Link
             to="/owntracks"
-            className="card hover:shadow-lg transition-shadow cursor-pointer bg-gradient-to-br from-primary-50 to-primary-100 border-primary-200"
+            className="block card hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-primary-50 via-primary-100 to-blue-100 border-2 border-primary-200 hover:border-primary-400 group"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <Smartphone className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    Setup OwnTracks Mobile App
-                  </h3>
-                  <p className="text-sm text-gray-600">
-                    Share your location with family members using the OwnTracks app
-                  </p>
-                </div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                <Smartphone className="w-7 h-7 text-white" />
               </div>
-              <ArrowRight className="w-6 h-6 text-primary-600 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="text-xl font-bold text-gray-900 mb-1 group-hover:text-primary-700 transition-colors">
+                  Setup Mobile App
+                </h3>
+                <p className="text-sm text-gray-700">
+                  Share your location with family members using the mobile tracking app
+                </p>
+              </div>
+              <ArrowRight className="w-6 h-6 text-primary-600 flex-shrink-0 group-hover:translate-x-1 transition-transform duration-300" />
             </div>
           </Link>
 

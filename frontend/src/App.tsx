@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
 import FamilyPage from './pages/FamilyPage';
 import MobileConfigPage from './pages/MobileConfigPage';
+import MessagesPage from './pages/MessagesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingScreen from './components/LoadingScreen';
 
@@ -67,6 +68,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <MobileConfigPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/messages"
+            element={
+              <ProtectedRoute>
+                <MessagesPage />
               </ProtectedRoute>
             }
           />

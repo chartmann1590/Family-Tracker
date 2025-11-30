@@ -7,6 +7,8 @@ import type {
   Family,
   LocationWithUser,
   LocationUpdate,
+  Message,
+  SendMessageRequest,
 } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -127,6 +129,21 @@ export const adminApi = {
 
   getStats: async () => {
     const response = await api.get('/admin/stats');
+    return response.data;
+  },
+};
+
+// Messages
+export const messageApi = {
+  getMessages: async (limit = 100): Promise<{ messages: Message[] }> => {
+    const response = await api.get<{ messages: Message[] }>('/messages', {
+      params: { limit },
+    });
+    return response.data;
+  },
+
+  sendMessage: async (data: SendMessageRequest): Promise<{ message: Message }> => {
+    const response = await api.post<{ message: Message }>('/messages', data);
     return response.data;
   },
 };

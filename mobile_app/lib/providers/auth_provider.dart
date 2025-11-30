@@ -34,19 +34,34 @@ class AuthProvider with ChangeNotifier {
     _logger.info('AuthProvider: Checking authentication...');
 
     try {
-      final hasToken = await _authService.hasToken();
+      final hasToken = await _authService.hasToken().timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          _logger.warning('AuthProvider: Token check timeout');
+          return false;
+        },
+      );
 
       if (hasToken) {
         _logger.info('AuthProvider: Token found, fetching user data');
-        final user = await _apiService.getCurrentUser();
-        _user = user;
-        await _authService.saveUserData(
-          userId: user.id,
-          email: user.email,
-          name: user.name,
-        );
-        _logger.logAuthEvent('User authenticated: ${user.email}');
-        _setState(AuthState.authenticated);
+        try {
+          final user = await _apiService.getCurrentUser().timeout(
+            const Duration(seconds: 10),
+          );
+          _user = user;
+          await _authService.saveUserData(
+            userId: user.id,
+            email: user.email,
+            name: user.name,
+          );
+          _logger.logAuthEvent('User authenticated: ${user.email}');
+          _setState(AuthState.authenticated);
+        } catch (e, stackTrace) {
+          _logger.error('AuthProvider: Error fetching user data', e, stackTrace);
+          // Token exists but couldn't fetch user - clear auth and require re-login
+          await _authService.clearAll();
+          _setState(AuthState.unauthenticated);
+        }
       } else {
         _logger.info('AuthProvider: No token found');
         _setState(AuthState.unauthenticated);
@@ -65,7 +80,12 @@ class AuthProvider with ChangeNotifier {
     _logger.info('AuthProvider: Attempting login for $email');
 
     try {
-      final result = await _apiService.login(email: email, password: password);
+      final result = await _apiService.login(email: email, password: password).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Login request timed out. Please check your connection and try again.');
+        },
+      );
       final user = result['user'] as User;
       final token = result['token'] as String;
 
@@ -82,7 +102,7 @@ class AuthProvider with ChangeNotifier {
       return true;
     } catch (e, stackTrace) {
       _logger.error('AuthProvider: Login failed for $email', e, stackTrace);
-      _error = e.toString();
+      _error = _formatErrorMessage(e);
       _setState(AuthState.unauthenticated);
       return false;
     }
@@ -99,6 +119,11 @@ class AuthProvider with ChangeNotifier {
         email: email,
         password: password,
         name: name,
+      ).timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Registration request timed out. Please check your connection and try again.');
+        },
       );
       final user = result['user'] as User;
       final token = result['token'] as String;
@@ -116,7 +141,7 @@ class AuthProvider with ChangeNotifier {
       return true;
     } catch (e, stackTrace) {
       _logger.error('AuthProvider: Registration failed for $email', e, stackTrace);
-      _error = e.toString();
+      _error = _formatErrorMessage(e);
       _setState(AuthState.unauthenticated);
       return false;
     }
@@ -156,5 +181,25 @@ class AuthProvider with ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  String _formatErrorMessage(dynamic error) {
+    final errorStr = error.toString();
+
+    // Clean up common error messages
+    if (errorStr.contains('SocketException') || errorStr.contains('Failed host lookup')) {
+      return 'Cannot connect to server. Please check your network connection.';
+    } else if (errorStr.contains('TimeoutException')) {
+      return 'Request timed out. Please try again.';
+    } else if (errorStr.contains('FormatException')) {
+      return 'Invalid response from server. Please check server configuration.';
+    } else if (errorStr.contains('Unauthorized') || errorStr.contains('401')) {
+      return 'Invalid email or password.';
+    } else if (errorStr.contains('Exception:')) {
+      // Extract the message after "Exception:"
+      return errorStr.split('Exception:').last.trim();
+    }
+
+    return errorStr;
   }
 }

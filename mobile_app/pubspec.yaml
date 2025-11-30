@@ -79,6 +79,9 @@ dependencies:
   # App info
   package_info_plus: ^8.0.0
 
+  # Local notifications
+  flutter_local_notifications: ^17.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

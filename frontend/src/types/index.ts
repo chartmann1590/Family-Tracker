@@ -62,3 +62,16 @@ export interface LocationUpdate {
   altitude?: number;
   battery?: number;
 }
+
+export interface Message {
+  id: number;
+  family_id: number;
+  sender_id: number;
+  sender_name: string;
+  content: string;
+  created_at: string;
+}
+
+export interface SendMessageRequest {
+  content: string;
+}

@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import '../models/message.dart';
 import '../services/api_service.dart';
 import '../services/websocket_service.dart';
+import '../services/notification_service.dart';
 import '../services/logger_service.dart';
+import '../services/auth_service.dart';
 
 class MessageProvider with ChangeNotifier {
   final ApiService _apiService;
   final WebSocketService _webSocketService;
+  final NotificationService _notificationService;
   final LoggerService _logger = LoggerService();
+  final AuthService _authService = AuthService();
 
   List<Message> _messages = [];
   MessagePagination? _pagination;
@@ -16,8 +20,13 @@ class MessageProvider with ChangeNotifier {
   bool _isSending = false;
   String? _error;
   StreamSubscription<Map<String, dynamic>>? _wsSubscription;
+  bool _isAppInForeground = true;
 
-  MessageProvider(this._apiService, this._webSocketService) {
+  MessageProvider(
+    this._apiService,
+    this._webSocketService,
+    this._notificationService,
+  ) {
     _listenToWebSocket();
   }
 
@@ -39,7 +48,7 @@ class MessageProvider with ChangeNotifier {
     });
   }
 
-  void _handleNewMessage(Map<String, dynamic> data) {
+  void _handleNewMessage(Map<String, dynamic> data) async {
     try {
       final message = Message.fromJson(data);
 
@@ -57,12 +66,49 @@ class MessageProvider with ChangeNotifier {
           );
         }
 
+        // Show notification for messages from other users
+        await _showNotificationForMessage(message);
+
         notifyListeners();
       }
     } catch (e, stackTrace) {
       _logger.error("Error in provider", e, stackTrace);
       print('Error handling new message: $e');
     }
+  }
+
+  // Show notification for new message
+  Future<void> _showNotificationForMessage(Message message) async {
+    try {
+      // Get current user ID to avoid notifying for own messages
+      final userId = await _authService.getUserId();
+
+      // Don't show notification for own messages
+      if (userId != null && message.userId == userId) {
+        _logger.debug(
+            'MessageProvider: Skipping notification for own message');
+        return;
+      }
+
+      // Show notification (works in background and foreground)
+      await _notificationService.showMessageNotification(
+        messageId: message.id,
+        userName: message.userName,
+        message: message.message,
+        userEmail: message.userEmail,
+      );
+
+      _logger.info(
+          'MessageProvider: Notification shown for message from ${message.userName}');
+    } catch (e, stackTrace) {
+      _logger.error('MessageProvider: Error showing notification', e, stackTrace);
+    }
+  }
+
+  // Set app foreground state (can be called from screen lifecycle)
+  void setAppForegroundState(bool isForeground) {
+    _isAppInForeground = isForeground;
+    _logger.debug('MessageProvider: App foreground state changed to $isForeground');
   }
 
   // Load messages

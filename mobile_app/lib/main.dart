@@ -6,6 +6,7 @@ import 'services/location_service.dart';
 import 'services/websocket_service.dart';
 import 'services/server_config_service.dart';
 import 'services/logger_service.dart';
+import 'services/notification_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/family_provider.dart';
 import 'providers/location_provider.dart';
@@ -14,7 +15,9 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/server_config_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   final logger = LoggerService();
 
   // Set up error handlers
@@ -26,6 +29,10 @@ void main() {
     );
     FlutterError.presentError(details);
   };
+
+  // Initialize notification service
+  final notificationService = NotificationService();
+  await notificationService.initialize();
 
   runApp(const FamilyTrackerApp());
 }
@@ -40,6 +47,9 @@ class FamilyTrackerApp extends StatelessWidget {
         // Services
         Provider<AuthService>(
           create: (_) => AuthService(),
+        ),
+        Provider<NotificationService>(
+          create: (_) => NotificationService(),
         ),
         ProxyProvider<AuthService, ApiService>(
           update: (_, authService, __) => ApiService(authService),
@@ -76,14 +86,16 @@ class FamilyTrackerApp extends StatelessWidget {
               previous ??
               LocationProvider(apiService, locationService, wsService),
         ),
-        ChangeNotifierProxyProvider2<ApiService, WebSocketService,
-            MessageProvider>(
+        ChangeNotifierProxyProvider3<ApiService, WebSocketService,
+            NotificationService, MessageProvider>(
           create: (context) => MessageProvider(
             context.read<ApiService>(),
             context.read<WebSocketService>(),
+            context.read<NotificationService>(),
           ),
-          update: (_, apiService, wsService, previous) =>
-              previous ?? MessageProvider(apiService, wsService),
+          update: (_, apiService, wsService, notificationService, previous) =>
+              previous ??
+              MessageProvider(apiService, wsService, notificationService),
         ),
       ],
       child: Consumer<AuthProvider>(
@@ -126,7 +138,7 @@ class AppInitializer extends StatefulWidget {
   State<AppInitializer> createState() => _AppInitializerState();
 }
 
-class _AppInitializerState extends State<AppInitializer> {
+class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObserver {
   final _serverConfigService = ServerConfigService();
   final _logger = LoggerService();
   bool _isChecking = true;
@@ -135,7 +147,22 @@ class _AppInitializerState extends State<AppInitializer> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _checkServerConfig();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Re-check configuration when app resumes
+    if (state == AppLifecycleState.resumed && !_isConfigured) {
+      _checkServerConfig();
+    }
   }
 
   Future<void> _checkServerConfig() async {
@@ -143,18 +170,22 @@ class _AppInitializerState extends State<AppInitializer> {
       _logger.info('Checking server configuration...');
       final isConfigured = await _serverConfigService.isConfigured();
 
-      setState(() {
-        _isConfigured = isConfigured;
-        _isChecking = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isConfigured = isConfigured;
+          _isChecking = false;
+        });
+      }
 
       _logger.info('Server configured: $isConfigured');
     } catch (e) {
       _logger.error('Error checking server configuration', e);
-      setState(() {
-        _isConfigured = false;
-        _isChecking = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isConfigured = false;
+          _isChecking = false;
+        });
+      }
     }
   }
 
@@ -182,10 +213,23 @@ class _AppInitializerState extends State<AppInitializer> {
     }
 
     if (!_isConfigured) {
-      return const ServerConfigScreen();
+      // Use a callback to re-check when configuration is saved
+      return ServerConfigScreenWrapper(onConfigured: _checkServerConfig);
     }
 
     return const AuthWrapper();
+  }
+}
+
+// Wrapper to handle configuration completion callback
+class ServerConfigScreenWrapper extends StatelessWidget {
+  final VoidCallback onConfigured;
+
+  const ServerConfigScreenWrapper({super.key, required this.onConfigured});
+
+  @override
+  Widget build(BuildContext context) {
+    return ServerConfigScreen(onConfigured: onConfigured);
   }
 }
 
@@ -197,6 +241,7 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
+  final _logger = LoggerService();
   bool _initialized = false;
 
   @override
@@ -206,10 +251,18 @@ class _AuthWrapperState extends State<AuthWrapper> {
   }
 
   Future<void> _checkAuth() async {
-    await context.read<AuthProvider>().checkAuthentication();
-    setState(() {
-      _initialized = true;
-    });
+    try {
+      _logger.info('AuthWrapper: Checking authentication...');
+      await context.read<AuthProvider>().checkAuthentication();
+    } catch (e, stackTrace) {
+      _logger.error('AuthWrapper: Error during auth check', e, stackTrace);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _initialized = true;
+        });
+      }
+    }
   }
 
   @override

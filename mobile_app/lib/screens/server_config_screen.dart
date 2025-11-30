@@ -3,7 +3,9 @@ import '../services/server_config_service.dart';
 import '../services/logger_service.dart';
 
 class ServerConfigScreen extends StatefulWidget {
-  const ServerConfigScreen({super.key});
+  final VoidCallback? onConfigured;
+
+  const ServerConfigScreen({super.key, this.onConfigured});
 
   @override
   State<ServerConfigScreen> createState() => _ServerConfigScreenState();
@@ -80,9 +82,9 @@ class _ServerConfigScreenState extends State<ServerConfigScreen> {
 
       _logger.info('Server configuration saved successfully');
 
-      if (mounted) {
-        // Navigate back to let main.dart handle the routing
-        Navigator.of(context).pushReplacementNamed('/');
+      // Notify parent that configuration is complete
+      if (widget.onConfigured != null) {
+        widget.onConfigured!();
       }
     } catch (e) {
       _logger.error('Error saving server configuration', e);
@@ -93,9 +95,6 @@ class _ServerConfigScreenState extends State<ServerConfigScreen> {
             backgroundColor: Colors.red,
           ),
         );
-      }
-    } finally {
-      if (mounted) {
         setState(() {
           _isLoading = false;
         });

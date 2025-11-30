@@ -11,6 +11,7 @@ class LoggerService {
   final List<String> _logBuffer = [];
   final int _maxBufferSize = 1000;
   File? _logFile;
+  bool _isInitialized = false;
 
   LoggerService._internal() {
     _logger = Logger(
@@ -24,6 +25,7 @@ class LoggerService {
       ),
       output: _CustomLogOutput(this),
     );
+    // Initialize log file asynchronously
     _initializeLogFile();
   }
 
@@ -38,10 +40,19 @@ class LoggerService {
       final dateStr = DateFormat('yyyy-MM-dd').format(DateTime.now());
       _logFile = File('${logDir.path}/app_log_$dateStr.txt');
 
+      // Ensure the file exists
+      if (!await _logFile!.exists()) {
+        await _logFile!.create();
+      }
+
+      _isInitialized = true;
+      print('Log file initialized: ${_logFile!.path}');
+
       // Clean up old log files (keep last 7 days)
       await _cleanupOldLogs(logDir);
     } catch (e) {
       print('Error initializing log file: $e');
+      _isInitialized = false;
     }
   }
 
@@ -80,7 +91,13 @@ class LoggerService {
 
   Future<void> _writeToFile(String message) async {
     try {
-      if (_logFile != null) {
+      // Wait for initialization if not ready yet
+      if (!_isInitialized && _logFile == null) {
+        // Try to initialize again if it failed
+        await _initializeLogFile();
+      }
+
+      if (_logFile != null && await _logFile!.exists()) {
         await _logFile!.writeAsString('$message\n', mode: FileMode.append);
       }
     } catch (e) {
@@ -141,12 +158,23 @@ class LoggerService {
 
   Future<String> getLogsFromFile() async {
     try {
+      // Wait for initialization if not ready yet
+      if (!_isInitialized && _logFile == null) {
+        await _initializeLogFile();
+      }
+
       if (_logFile != null && await _logFile!.exists()) {
-        return await _logFile!.readAsString();
+        final content = await _logFile!.readAsString();
+        // If file is empty but buffer has logs, return buffer
+        if (content.trim().isEmpty && _logBuffer.isNotEmpty) {
+          return getAllLogs();
+        }
+        return content;
       }
     } catch (e) {
       error('Error reading log file', e);
     }
+    // Fallback to in-memory buffer
     return getAllLogs();
   }
 

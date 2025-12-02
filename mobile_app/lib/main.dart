@@ -7,6 +7,7 @@ import 'services/websocket_service.dart';
 import 'services/server_config_service.dart';
 import 'services/logger_service.dart';
 import 'services/notification_service.dart';
+import 'services/background_location_service.dart';
 import 'providers/auth_provider.dart';
 import 'providers/family_provider.dart';
 import 'providers/location_provider.dart';
@@ -33,6 +34,9 @@ void main() async {
   // Initialize notification service
   final notificationService = NotificationService();
   await notificationService.initialize();
+
+  // Initialize background location service
+  await BackgroundLocationService.initialize();
 
   runApp(const FamilyTrackerApp());
 }
@@ -167,8 +171,14 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
 
   Future<void> _checkServerConfig() async {
     try {
-      _logger.info('Checking server configuration...');
+      _logger.info('AppInitializer: Checking server configuration...');
       final isConfigured = await _serverConfigService.isConfigured();
+      _logger.info('AppInitializer: Server configured status: $isConfigured');
+
+      if (isConfigured) {
+        final serverUrl = await _serverConfigService.getServerUrl();
+        _logger.info('AppInitializer: Server URL: $serverUrl');
+      }
 
       if (mounted) {
         setState(() {
@@ -176,10 +186,8 @@ class _AppInitializerState extends State<AppInitializer> with WidgetsBindingObse
           _isChecking = false;
         });
       }
-
-      _logger.info('Server configured: $isConfigured');
     } catch (e) {
-      _logger.error('Error checking server configuration', e);
+      _logger.error('AppInitializer: Error checking server configuration', e);
       if (mounted) {
         setState(() {
           _isConfigured = false;

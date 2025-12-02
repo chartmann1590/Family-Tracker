@@ -4,30 +4,25 @@ part 'message.g.dart';
 
 @JsonSerializable()
 class Message {
-  final int id;
-  @JsonKey(name: 'familyId')
-  final int familyId;
-  @JsonKey(name: 'userId')
-  final int userId;
-  @JsonKey(name: 'userName')
+  final int? id;
+  @JsonKey(name: 'family_id')
+  final int? familyId;
+  @JsonKey(name: 'sender_id')
+  final int? userId;
+  @JsonKey(name: 'sender_name')
   final String userName;
-  @JsonKey(name: 'userEmail')
-  final String userEmail;
+  @JsonKey(name: 'content')
   final String message;
-  @JsonKey(name: 'createdAt')
+  @JsonKey(name: 'created_at')
   final String createdAt;
-  @JsonKey(name: 'updatedAt')
-  final String? updatedAt;
 
   Message({
-    required this.id,
-    required this.familyId,
-    required this.userId,
+    this.id,
+    this.familyId,
+    this.userId,
     required this.userName,
-    required this.userEmail,
     required this.message,
     required this.createdAt,
-    this.updatedAt,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) => _$MessageFromJson(json);
@@ -38,24 +33,20 @@ class Message {
     int? familyId,
     int? userId,
     String? userName,
-    String? userEmail,
     String? message,
     String? createdAt,
-    String? updatedAt,
   }) {
     return Message(
       id: id ?? this.id,
       familyId: familyId ?? this.familyId,
       userId: userId ?? this.userId,
       userName: userName ?? this.userName,
-      userEmail: userEmail ?? this.userEmail,
       message: message ?? this.message,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 
-  bool isFromUser(int currentUserId) => userId == currentUserId;
+  bool isFromUser(int currentUserId) => userId != null && userId == currentUserId;
 }
 
 @JsonSerializable()
@@ -65,9 +56,9 @@ class MessagePagination {
   final int total;
 
   MessagePagination({
-    required this.limit,
-    required this.offset,
-    required this.total,
+    this.limit = 100,
+    this.offset = 0,
+    this.total = 0,
   });
 
   factory MessagePagination.fromJson(Map<String, dynamic> json) =>

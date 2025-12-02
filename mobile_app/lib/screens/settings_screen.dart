@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../services/server_config_service.dart';
 import '../services/logger_service.dart';
+import '../services/background_location_service.dart';
+import '../services/notification_service.dart';
 import 'log_viewer_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -20,25 +27,45 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _appVersion = 'Loading...';
   String _buildNumber = '';
   bool _isLoading = true;
+  bool _backgroundTrackingEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _logger.logScreenView('SettingsScreen');
     _loadSettings();
+    _initializeBackgroundService();
+  }
+
+  Future<void> _initializeBackgroundService() async {
+    try {
+      await BackgroundLocationService.initialize();
+      _logger.info('Background location service initialized');
+    } catch (e) {
+      _logger.error('Failed to initialize background service', e);
+    }
   }
 
   Future<void> _loadSettings() async {
     try {
       final serverUrl = await _serverConfigService.getServerUrl();
       final packageInfo = await PackageInfo.fromPlatform();
+      final prefs = await SharedPreferences.getInstance();
+      final isEnabled = prefs.getBool('background_tracking_enabled') ?? false;
 
       setState(() {
         _serverUrl = serverUrl;
         _appVersion = packageInfo.version;
         _buildNumber = packageInfo.buildNumber;
+        _backgroundTrackingEnabled = isEnabled;
         _isLoading = false;
       });
+
+      // Show persistent notification if tracking is enabled
+      if (isEnabled && mounted) {
+        final notificationService = context.read<NotificationService>();
+        await notificationService.showTrackingNotification();
+      }
     } catch (e) {
       _logger.error('Error loading settings', e);
       setState(() {
@@ -112,27 +139,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _logger.logTap('SettingsScreen', 'EmailLogsButton');
 
     try {
-      final logs = await _logger.getLogsFromFile();
+      // Try to get log files first
+      final logFiles = await _logger.getAllLogFiles();
 
-      final emailUri = Uri(
-        scheme: 'mailto',
-        path: 'support@familytracker.com',
-        query: 'subject=Family Tracker Logs&body=${Uri.encodeComponent(logs)}',
+      if (logFiles.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No log files found'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
+      // Use share_plus to share the log file
+      // This works better than mailto on Android as it lets user choose app
+      await Share.shareXFiles(
+        [XFile(logFiles.first.path)],
+        subject: 'Family Tracker Logs',
+        text: 'Application logs from Family Tracker',
       );
 
-      if (await canLaunchUrl(emailUri)) {
-        await launchUrl(emailUri);
-        _logger.info('Email logs opened');
-      } else {
-        throw Exception('Could not open email app');
-      }
+      _logger.info('Logs shared successfully');
     } catch (e) {
-      _logger.error('Error emailing logs', e);
+      _logger.error('Error sharing logs', e);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to open email: $e'),
+            content: Text('Failed to share logs: $e'),
             backgroundColor: Colors.red,
           ),
         );
@@ -192,6 +229,152 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _toggleBackgroundTracking(bool value) async {
+    _logger.logTap('SettingsScreen', 'ToggleBackgroundTracking');
+
+    if (value) {
+      // Check for location always permission
+      var status = await Permission.locationAlways.status;
+      
+      if (!status.isGranted) {
+        // If not granted, we need to request it
+        // First check if we need to show rationale
+        if (await Permission.locationAlways.shouldShowRequestRationale) {
+           if (!mounted) return;
+           final shouldOpenSettings = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Background Location Required'),
+              content: const Text(
+                'To track your location in the background, this app needs "Allow all the time" location permission. Please enable it in settings.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+
+          if (shouldOpenSettings == true) {
+            await openAppSettings();
+            // We can't know if they actually granted it until they come back, 
+            // so we'll just return for now and let them try again.
+            return;
+          } else {
+            return;
+          }
+        }
+        
+        // Request permission
+        status = await Permission.locationAlways.request();
+        
+        if (!status.isGranted) {
+           if (!mounted) return;
+           // If still not granted (e.g. user denied or system auto-denied), show explanation and settings link
+           final shouldOpenSettings = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Permission Denied'),
+              content: const Text(
+                'Background location tracking cannot be enabled without "Allow all the time" location permission. Please enable it in settings.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Open Settings'),
+                ),
+              ],
+            ),
+          );
+          
+          if (shouldOpenSettings == true) {
+            await openAppSettings();
+          }
+          return;
+        }
+      }
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final notificationService = context.read<NotificationService>();
+
+      if (value) {
+        // Store API URL for background service to use
+        if (_serverUrl != null) {
+          const storage = FlutterSecureStorage();
+          await storage.write(key: 'api_url', value: _serverUrl);
+        }
+
+        await BackgroundLocationService.startTracking();
+        await prefs.setBool('background_tracking_enabled', true);
+
+        // Show persistent notification
+        await notificationService.showTrackingNotification();
+
+        _logger.info('Background tracking enabled (updates every 15 minutes)');
+      } else {
+        await BackgroundLocationService.stopTracking();
+        await prefs.setBool('background_tracking_enabled', false);
+
+        // Hide persistent notification
+        await notificationService.hideTrackingNotification();
+
+        _logger.info('Background tracking disabled');
+      }
+
+      setState(() {
+        _backgroundTrackingEnabled = value;
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              value
+                  ? 'Background location tracking enabled (updates every 15 minutes)'
+                  : 'Background location tracking disabled',
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      _logger.error('Error toggling background tracking', e);
+
+      setState(() {
+        _isLoading = false;
+        // Revert switch state if it failed
+        if (value) _backgroundTrackingEnabled = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to toggle background tracking: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -204,6 +387,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               children: [
+                // Background Location Section
+                _buildSectionHeader('Background Location Tracking'),
+                Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    children: [
+                      SwitchListTile(
+                        secondary: const Icon(Icons.location_on),
+                        title: const Text('Enable Background Tracking'),
+                        subtitle: const Text('Updates location every 15 minutes when app is closed'),
+                        value: _backgroundTrackingEnabled,
+                        onChanged: _toggleBackgroundTracking,
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.info_outline),
+                        title: const Text('Battery Optimization'),
+                        subtitle: const Text(
+                          'For reliable background tracking, disable battery optimization for this app in Android settings',
+                        ),
+                        dense: true,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
                 // Server Configuration Section
                 _buildSectionHeader('Server Configuration'),
                 Card(

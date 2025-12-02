@@ -151,7 +151,7 @@ class _MessagesScreenState extends State<MessagesScreen> {
                         message: message,
                         isCurrentUser: isCurrentUser,
                         isFirstInGroup: isFirstInGroup,
-                        onDelete: () => _deleteMessage(message.id),
+                        onDelete: message.id != null ? () => _deleteMessage(message.id!) : () {},
                       );
                     },
                   ),

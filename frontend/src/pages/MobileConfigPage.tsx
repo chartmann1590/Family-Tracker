@@ -27,7 +27,7 @@ export default function MobileConfigPage() {
   const [copiedServerUrl, setCopiedServerUrl] = useState(false);
 
   const serverUrl = `${window.location.origin}/api/owntracks`;
-  const apkDownloadUrl = `${window.location.origin}/downloads/family-tracker.apk`;
+  const apkDownloadUrl = `${window.location.origin}/api/download/apk`;
 
   const copyToClipboard = async (text: string, type: 'token' | 'url' | 'serverUrl') => {
     try {
@@ -70,11 +70,10 @@ export default function MobileConfigPage() {
           <div className="flex gap-2 mb-6 border-b border-gray-200">
             <button
               onClick={() => setSelectedTab('flutter')}
-              className={`px-6 py-3 font-medium transition-all duration-200 border-b-2 ${
-                selectedTab === 'flutter'
+              className={`px-6 py-3 font-medium transition-all duration-200 border-b-2 ${selectedTab === 'flutter'
                   ? 'border-primary-600 text-primary-600'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2">
                 <Smartphone className="w-5 h-5" />
@@ -83,11 +82,10 @@ export default function MobileConfigPage() {
             </button>
             <button
               onClick={() => setSelectedTab('owntracks')}
-              className={`px-6 py-3 font-medium transition-all duration-200 border-b-2 ${
-                selectedTab === 'owntracks'
+              className={`px-6 py-3 font-medium transition-all duration-200 border-b-2 ${selectedTab === 'owntracks'
                   ? 'border-primary-600 text-primary-600'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-2">
                 <Radio className="w-5 h-5" />
@@ -479,11 +477,10 @@ export default function MobileConfigPage() {
                     <div className="flex gap-2 mb-6">
                       <button
                         onClick={() => setSelectedPlatform('ios')}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                          selectedPlatform === 'ios'
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedPlatform === 'ios'
                             ? 'bg-primary-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Apple className="w-4 h-4" />
@@ -492,11 +489,10 @@ export default function MobileConfigPage() {
                       </button>
                       <button
                         onClick={() => setSelectedPlatform('android')}
-                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                          selectedPlatform === 'android'
+                        className={`px-4 py-2 rounded-lg font-medium transition-colors ${selectedPlatform === 'android'
                             ? 'bg-primary-600 text-white'
                             : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-2">
                           <Package className="w-4 h-4" />

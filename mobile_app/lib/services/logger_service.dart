@@ -15,6 +15,7 @@ class LoggerService {
 
   LoggerService._internal() {
     _logger = Logger(
+      filter: ProductionFilter(),
       printer: PrettyPrinter(
         methodCount: 2,
         errorMethodCount: 8,
@@ -77,31 +78,38 @@ class LoggerService {
   }
 
   void _addToBuffer(String message) {
-    final timestamp = DateFormat('yyyy-MM-dd HH:mm:ss.SSS').format(DateTime.now());
-    final logEntry = '[$timestamp] $message';
-
-    _logBuffer.add(logEntry);
+    _logBuffer.add(message);
 
     if (_logBuffer.length > _maxBufferSize) {
       _logBuffer.removeAt(0);
     }
 
-    _writeToFile(logEntry);
+    _writeToFile(message);
   }
 
   Future<void> _writeToFile(String message) async {
     try {
-      // Wait for initialization if not ready yet
-      if (!_isInitialized && _logFile == null) {
-        // Try to initialize again if it failed
+      // Wait for initialization if not ready yet with longer timeout
+      int attempts = 0;
+      while (!_isInitialized && _logFile == null && attempts < 20) {
+        await Future.delayed(const Duration(milliseconds: 100));
+        attempts++;
+      }
+
+      // Try to initialize again if it failed
+      if (!_isInitialized || _logFile == null) {
         await _initializeLogFile();
       }
 
       if (_logFile != null && await _logFile!.exists()) {
         await _logFile!.writeAsString('$message\n', mode: FileMode.append);
+      } else {
+        // Fallback to console if file writing fails
+        print('LOG_FALLBACK: $message');
       }
     } catch (e) {
       print('Error writing to log file: $e');
+      print('LOG_FALLBACK: $message');
     }
   }
 
@@ -218,9 +226,23 @@ class _CustomLogOutput extends LogOutput {
 
   @override
   void output(OutputEvent event) {
+    // Print to console using the PrettyPrinter format
     for (var line in event.lines) {
       print(line);
-      loggerService._addToBuffer(line);
     }
+
+    // Save to file using a simple format
+    // [TIMESTAMP] [LEVEL] Message
+    final timestamp = DateFormat('yyyy-MM-dd HH:mm:ss.SSS').format(DateTime.now());
+    final level = event.level.name.toUpperCase();
+    final message = event.origin.message;
+    final error = event.origin.error;
+    
+    String logEntry = '[$timestamp] [$level] $message';
+    if (error != null) {
+      logEntry += '\nError: $error';
+    }
+    
+    loggerService._addToBuffer(logEntry);
   }
 }

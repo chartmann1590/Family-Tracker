@@ -26,6 +26,21 @@ class NotificationService {
     enableVibration: true,
   );
 
+  // Android notification channel for background tracking
+  static const AndroidNotificationChannel _trackingChannel =
+      AndroidNotificationChannel(
+    'family_tracker_location', // id
+    'Background Location Tracking', // name
+    description: 'Persistent notification while location tracking is active',
+    importance: Importance.low, // Low importance for persistent notifications
+    playSound: false,
+    enableVibration: false,
+    showBadge: false,
+  );
+
+  // Notification ID for persistent tracking notification
+  static const int _trackingNotificationId = 999999;
+
   // Initialize the notification service
   Future<bool> initialize() async {
     if (_initialized) {
@@ -65,11 +80,13 @@ class NotificationService {
         return false;
       }
 
-      // Create notification channel for Android
-      await _notificationsPlugin
+      // Create notification channels for Android
+      final androidImplementation = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
-              AndroidFlutterLocalNotificationsPlugin>()
-          ?.createNotificationChannel(_messageChannel);
+              AndroidFlutterLocalNotificationsPlugin>();
+
+      await androidImplementation?.createNotificationChannel(_messageChannel);
+      await androidImplementation?.createNotificationChannel(_trackingChannel);
 
       // Request permissions
       await requestPermissions();
@@ -262,6 +279,74 @@ class NotificationService {
       _logger.error('NotificationService: Error getting pending notifications',
           e, stackTrace);
       return [];
+    }
+  }
+
+  // Show persistent notification for background tracking
+  Future<void> showTrackingNotification() async {
+    if (!_initialized) {
+      _logger.warning(
+          'NotificationService: Cannot show tracking notification - not initialized');
+      return;
+    }
+
+    try {
+      _logger.info('NotificationService: Showing persistent tracking notification');
+
+      // Android notification details
+      final AndroidNotificationDetails androidDetails =
+          AndroidNotificationDetails(
+        _trackingChannel.id,
+        _trackingChannel.name,
+        channelDescription: _trackingChannel.description,
+        importance: Importance.low,
+        priority: Priority.low,
+        ongoing: true, // Makes it persistent
+        autoCancel: false, // Prevents dismissing by swiping
+        showWhen: false,
+        icon: '@mipmap/ic_launcher',
+        styleInformation: const BigTextStyleInformation(
+          'Family Tracker is tracking your location in the background. Updates sent every 15 minutes.',
+          contentTitle: 'Location Tracking Active',
+        ),
+      );
+
+      // iOS notification details
+      const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
+        presentAlert: false, // Don't show alert for persistent notification
+        presentBadge: false,
+        presentSound: false,
+      );
+
+      // Combined notification details
+      final NotificationDetails notificationDetails = NotificationDetails(
+        android: androidDetails,
+        iOS: iosDetails,
+      );
+
+      // Show the notification
+      await _notificationsPlugin.show(
+        _trackingNotificationId,
+        'Location Tracking Active',
+        'Updating every 15 minutes',
+        notificationDetails,
+      );
+
+      _logger.info('NotificationService: Tracking notification shown successfully');
+    } catch (e, stackTrace) {
+      _logger.error(
+          'NotificationService: Error showing tracking notification', e, stackTrace);
+    }
+  }
+
+  // Hide persistent tracking notification
+  Future<void> hideTrackingNotification() async {
+    try {
+      await _notificationsPlugin.cancel(_trackingNotificationId);
+      _logger.info('NotificationService: Tracking notification hidden');
+    } catch (e, stackTrace) {
+      _logger.error(
+          'NotificationService: Error hiding tracking notification', e, stackTrace);
     }
   }
 

@@ -312,6 +312,39 @@ cd backend && npm run build
 cd frontend && npm run build
 ```
 
+### Building Docker with Latest APK
+
+**The Docker build automatically includes the latest APK** from `mobile_app/build/app/outputs/flutter-apk/app-release.apk` if it exists. No manual copying is required!
+
+```bash
+# Build the APK first (if not already built)
+cd mobile_app
+flutter build apk --release
+
+# Build Docker images - APK will be automatically included
+docker-compose build
+# or
+npm run docker:build
+```
+
+**How it works:**
+- The Docker build process automatically looks for the APK in `mobile_app/build/app/outputs/flutter-apk/app-release.apk`
+- If found, it copies it to the frontend's public downloads directory
+- If not found, it uses any existing APK in `frontend/public/downloads/` or continues without one
+- The APK is served at `/downloads/family-tracker.apk` in the running container
+
+**Manual APK management (optional):**
+```bash
+# Copy the latest APK to frontend manually (if needed for local development)
+npm run copy-apk
+
+# Build APK and copy it automatically
+npm run apk:build-and-copy
+
+# Build Docker with explicit APK copy step (redundant but available)
+npm run docker:build:with-apk
+```
+
 ## Troubleshooting
 
 ### Database Connection Issues
@@ -336,13 +369,22 @@ cd frontend && npm run build
 - Refresh the page
 - Check browser console for errors
 
-## Future Mobile App
+## Mobile App
 
-This application is designed to work with a custom mobile app (to be developed). The API is ready for:
-- Location updates
-- Real-time notifications
-- Family management
-- User authentication
+A Flutter-based Android mobile app is included in this repository. The app provides:
+
+- **Real-time Location Tracking**: Automatic location updates with configurable intervals
+- **Family Management**: Create, join, and manage family groups
+- **Interactive Maps**: View family members' locations on an interactive map
+- **Real-time Messaging**: Chat with family members
+- **In-app Logs**: View application logs for debugging
+- **Secure Authentication**: JWT-based authentication with secure token storage
+
+### Building the Mobile App
+
+See the [Building Docker with Latest APK](#building-docker-with-latest-apk) section above for instructions on building and deploying the APK.
+
+For detailed mobile app setup and configuration, see `PROJECT_SUMMARY.md` and `MOBILE_API_DOCUMENTATION.md`.
 
 API documentation is available at `/api/health` for health checks.
 

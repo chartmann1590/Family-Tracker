@@ -12,7 +12,11 @@
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build --workspaces",
+    "copy-apk": "node scripts/copy-apk.js",
+    "apk:build": "cd mobile_app && flutter build apk --release",
+    "apk:build-and-copy": "npm run apk:build && npm run copy-apk",
     "docker:build": "docker-compose build",
+    "docker:build:with-apk": "npm run copy-apk && docker-compose build",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down"
   },

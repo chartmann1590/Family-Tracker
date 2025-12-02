@@ -7,32 +7,28 @@ part of 'message.dart';
 // **************************************************************************
 
 Message _$MessageFromJson(Map<String, dynamic> json) => Message(
-  id: (json['id'] as num).toInt(),
-  familyId: (json['familyId'] as num).toInt(),
-  userId: (json['userId'] as num).toInt(),
-  userName: json['userName'] as String,
-  userEmail: json['userEmail'] as String,
-  message: json['message'] as String,
-  createdAt: json['createdAt'] as String,
-  updatedAt: json['updatedAt'] as String?,
+  id: (json['id'] as num?)?.toInt(),
+  familyId: (json['family_id'] as num?)?.toInt(),
+  userId: (json['sender_id'] as num?)?.toInt(),
+  userName: json['sender_name'] as String,
+  message: json['content'] as String,
+  createdAt: json['created_at'] as String,
 );
 
 Map<String, dynamic> _$MessageToJson(Message instance) => <String, dynamic>{
   'id': instance.id,
-  'familyId': instance.familyId,
-  'userId': instance.userId,
-  'userName': instance.userName,
-  'userEmail': instance.userEmail,
-  'message': instance.message,
-  'createdAt': instance.createdAt,
-  'updatedAt': instance.updatedAt,
+  'family_id': instance.familyId,
+  'sender_id': instance.userId,
+  'sender_name': instance.userName,
+  'content': instance.message,
+  'created_at': instance.createdAt,
 };
 
 MessagePagination _$MessagePaginationFromJson(Map<String, dynamic> json) =>
     MessagePagination(
-      limit: (json['limit'] as num).toInt(),
-      offset: (json['offset'] as num).toInt(),
-      total: (json['total'] as num).toInt(),
+      limit: (json['limit'] as num?)?.toInt() ?? 100,
+      offset: (json['offset'] as num?)?.toInt() ?? 0,
+      total: (json['total'] as num?)?.toInt() ?? 0,
     );
 
 Map<String, dynamic> _$MessagePaginationToJson(MessagePagination instance) =>

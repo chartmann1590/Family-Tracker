@@ -82,6 +82,12 @@ dependencies:
   # Local notifications
   flutter_local_notifications: ^17.2.3
 
+  # Shared preferences for settings
+  shared_preferences: ^2.2.2
+
+  # Background tasks for location tracking
+  workmanager: ^0.9.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

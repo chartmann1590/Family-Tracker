@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import '../services/logger_service.dart';
 
 enum LogLevel {
@@ -26,29 +27,56 @@ class LogEntry {
   });
 
   static LogEntry parse(String line) {
-    // Parse log line format: [timestamp] LEVEL: message
-    final timestampMatch = RegExp(r'\[(.*?)\]').firstMatch(line);
-    final timestamp = timestampMatch?.group(1) ?? '';
-
+    // Parse log line format: [timestamp] [LEVEL] message
+    // Example: [2024-05-20 10:30:45.123] [INFO] User logged in
+    
+    String timestamp = '';
     String level = 'INFO';
     String message = line;
 
-    if (line.contains('DEBUG:') || line.contains('\u{1F41B}')) {
-      level = 'DEBUG';
-    } else if (line.contains('INFO:') || line.contains('\u{2139}\u{FE0F}')) {
-      level = 'INFO';
-    } else if (line.contains('WARNING:') || line.contains('\u{26A0}\u{FE0F}')) {
-      level = 'WARNING';
-    } else if (line.contains('ERROR:') || line.contains('\u{26D4}')) {
-      level = 'ERROR';
-    } else if (line.contains('WTF:') || line.contains('\u{1F480}')) {
-      level = 'FATAL';
-    }
-
-    // Extract message after level indicator
-    final parts = line.split(RegExp(r'(DEBUG:|INFO:|WARNING:|ERROR:|WTF:)'));
-    if (parts.length > 1) {
-      message = parts.last.trim();
+    try {
+      final timestampMatch = RegExp(r'^\[(.*?)\]').firstMatch(line);
+      if (timestampMatch != null) {
+        timestamp = timestampMatch.group(1) ?? '';
+        
+        // Remove timestamp from line to find level
+        final remaining = line.substring(timestampMatch.end).trim();
+        
+        final levelMatch = RegExp(r'^\[(.*?)\]').firstMatch(remaining);
+        if (levelMatch != null) {
+          level = levelMatch.group(1) ?? 'INFO';
+          // Message is everything after level
+          message = remaining.substring(levelMatch.end).trim();
+        } else {
+          // Fallback for old format or other logs
+          message = remaining;
+        }
+      } else {
+        // Try parsing old format just in case
+        // [timestamp] LEVEL: message
+        final oldTimestampMatch = RegExp(r'\[(.*?)\]').firstMatch(line);
+        timestamp = oldTimestampMatch?.group(1) ?? '';
+        
+        if (line.contains('DEBUG:') || line.contains('\u{1F41B}')) {
+          level = 'DEBUG';
+        } else if (line.contains('INFO:') || line.contains('\u{2139}\u{FE0F}')) {
+          level = 'INFO';
+        } else if (line.contains('WARNING:') || line.contains('\u{26A0}\u{FE0F}')) {
+          level = 'WARNING';
+        } else if (line.contains('ERROR:') || line.contains('\u{26D4}')) {
+          level = 'ERROR';
+        } else if (line.contains('WTF:') || line.contains('\u{1F480}')) {
+          level = 'FATAL';
+        }
+        
+        final parts = line.split(RegExp(r'(DEBUG:|INFO:|WARNING:|ERROR:|WTF:)'));
+        if (parts.length > 1) {
+          message = parts.last.trim();
+        }
+      }
+    } catch (e) {
+      // If parsing fails, just return the whole line as message
+      message = line;
     }
 
     return LogEntry(
@@ -81,6 +109,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
   void initState() {
     super.initState();
     _logger.logScreenView('LogViewerScreen');
+    _logger.info('LogViewerScreen initialized - Testing logging system');
     _loadLogs();
   }
 
@@ -123,7 +152,7 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
       _filteredLogs = _allLogs.where((log) {
         // Filter by level
         if (_selectedLevel != LogLevel.all) {
-          if (log.level.toLowerCase() != _selectedLevel.name) {
+          if (log.level.toUpperCase() != _selectedLevel.name.toUpperCase()) {
             return false;
           }
         }
@@ -144,12 +173,24 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
 
     try {
       final logFiles = await _logger.getAllLogFiles();
+      
+      // Also get background service logs
+      final directory = await getApplicationDocumentsDirectory();
+      final logDir = Directory('${directory.path}/logs');
+      
+      if (await logDir.exists()) {
+        final bgLogFiles = await logDir.list()
+            .where((entity) => entity is File && entity.path.contains('background_service_'))
+            .map((entity) => entity as File)
+            .toList();
+        logFiles.addAll(bgLogFiles);
+      }
 
       if (logFiles.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('No log files found'),
+              content: Text('No log files found to export'),
               backgroundColor: Colors.orange,
             ),
           );
@@ -157,12 +198,11 @@ class _LogViewerScreenState extends State<LogViewerScreen> {
         return;
       }
 
-      // Share the most recent log file
-      final file = logFiles.first;
+      // Share all log files
       await Share.shareXFiles(
-        [XFile(file.path)],
+        logFiles.map((f) => XFile(f.path)).toList(),
         subject: 'Family Tracker Logs',
-        text: 'Application logs from Family Tracker',
+        text: 'Application logs from Family Tracker (includes background service logs)',
       );
 
       _logger.info('Logs exported successfully');

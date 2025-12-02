@@ -8,7 +8,11 @@ import { broadcastMessage } from '../websocket';
 const router = Router();
 
 const sendMessageSchema = z.object({
-  message: z.string().min(1).max(5000),
+  // Accept both 'message' (mobile app) and 'content' (frontend)
+  message: z.string().min(1).max(5000).optional(),
+  content: z.string().min(1).max(5000).optional(),
+}).refine((data) => data.message || data.content, {
+  message: "Either 'message' or 'content' must be provided",
 });
 
 // Send a message to family
@@ -18,13 +22,15 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'User does not belong to a family' });
     }
 
-    const { message } = sendMessageSchema.parse(req.body);
+    const body = sendMessageSchema.parse(req.body);
+    // Accept both 'message' (mobile app) and 'content' (frontend)
+    const messageContent = body.message || body.content!;
 
     const result = await pool.query(
       `INSERT INTO messages (family_id, user_id, message)
        VALUES ($1, $2, $3)
        RETURNING id, family_id, user_id, message, created_at, updated_at`,
-      [req.user!.family_id, req.user!.id, message]
+      [req.user!.family_id, req.user!.id, messageContent]
     );
 
     const savedMessage = result.rows[0];
@@ -32,23 +38,21 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     // Broadcast to WebSocket clients in the same family
     broadcastMessage(req.user!.family_id, {
       id: savedMessage.id,
-      familyId: savedMessage.family_id,
-      userId: savedMessage.user_id,
-      userName: req.user!.name,
-      userEmail: req.user!.email,
-      message: savedMessage.message,
-      createdAt: savedMessage.created_at,
+      family_id: savedMessage.family_id,
+      sender_id: savedMessage.user_id,
+      sender_name: req.user!.name,
+      content: savedMessage.message,
+      created_at: savedMessage.created_at,
     });
 
     res.status(201).json({
       message: {
         id: savedMessage.id,
-        familyId: savedMessage.family_id,
-        userId: savedMessage.user_id,
-        userName: req.user!.name,
-        userEmail: req.user!.email,
-        message: savedMessage.message,
-        createdAt: savedMessage.created_at,
+        family_id: savedMessage.family_id,
+        sender_id: savedMessage.user_id,
+        sender_name: req.user!.name,
+        content: savedMessage.message,
+        created_at: savedMessage.created_at,
       },
     });
   } catch (error) {
@@ -83,13 +87,11 @@ router.get('/', authenticateToken, async (req: AuthRequest, res: Response) => {
 
     const messages = result.rows.map((row) => ({
       id: row.id,
-      familyId: row.family_id,
-      userId: row.user_id,
-      userName: row.user_name,
-      userEmail: row.user_email,
-      message: row.message,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      family_id: row.family_id,
+      sender_id: row.user_id,
+      sender_name: row.user_name,
+      content: row.message,
+      created_at: row.created_at,
     }));
 
     // Get total count for pagination

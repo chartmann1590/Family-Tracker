@@ -3,6 +3,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import path from 'path';
+import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcrypt';
 import { pool, initDatabase } from './config/database';
@@ -47,6 +49,30 @@ app.use('/api/families', familyRoutes);
 app.use('/api/owntracks', owntracksRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
+
+// APK Download Route
+app.get('/api/download/apk', (req, res) => {
+  const apkPath = path.join(__dirname, '../downloads/family-tracker.apk');
+  
+  if (fs.existsSync(apkPath)) {
+    const stat = fs.statSync(apkPath);
+    
+    res.writeHead(200, {
+      'Content-Type': 'application/vnd.android.package-archive',
+      'Content-Length': stat.size,
+      'Content-Disposition': 'attachment; filename=family-tracker.apk',
+      'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+    });
+    
+    const readStream = fs.createReadStream(apkPath);
+    readStream.pipe(res);
+  } else {
+    console.error(`APK not found at path: ${apkPath}`);
+    res.status(404).json({ error: 'APK file not found' });
+  }
+});
 
 // Health check
 app.get('/api/health', (req, res) => {

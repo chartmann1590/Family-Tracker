@@ -92,10 +92,9 @@ class MessageProvider with ChangeNotifier {
 
       // Show notification (works in background and foreground)
       await _notificationService.showMessageNotification(
-        messageId: message.id,
+        messageId: message.id ?? 0,
         userName: message.userName,
         message: message.message,
-        userEmail: message.userEmail,
       );
 
       _logger.info(

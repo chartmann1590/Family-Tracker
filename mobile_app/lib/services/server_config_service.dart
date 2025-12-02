@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'logger_service.dart';
 
@@ -7,7 +8,11 @@ class ServerConfigService {
   static final ServerConfigService _instance = ServerConfigService._internal();
   factory ServerConfigService() => _instance;
 
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+    ),
+  );
   final LoggerService _logger = LoggerService();
 
   static const String _serverUrlKey = 'server_url';
@@ -64,9 +69,27 @@ class ServerConfigService {
     }
 
     try {
-      final value = await _storage.read(key: _isConfiguredKey);
-      _cachedIsConfigured = value == 'true';
-      return _cachedIsConfigured!;
+      // Try to get from SharedPreferences first (more reliable for simple flags)
+      final prefs = await SharedPreferences.getInstance();
+      final isConfigured = prefs.getBool(_isConfiguredKey);
+      
+      if (isConfigured == true) {
+        _cachedIsConfigured = true;
+        return true;
+      }
+
+      // Fallback: Check if we have a server URL in secure storage
+      // This handles cases where the flag might have been lost but data persists
+      final serverUrl = await _storage.read(key: _serverUrlKey);
+      if (serverUrl != null && serverUrl.isNotEmpty) {
+        _logger.info('Found server URL but is_configured flag was missing. Repairing...');
+        await markAsConfigured(); // Repair the flag
+        _cachedIsConfigured = true;
+        return true;
+      }
+
+      _cachedIsConfigured = false;
+      return false;
     } catch (e) {
       _logger.error('Error checking configuration status', e);
       return false;
@@ -76,7 +99,12 @@ class ServerConfigService {
   // Mark as configured
   Future<void> markAsConfigured() async {
     try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_isConfiguredKey, true);
+      
+      // Also save to secure storage for backward compatibility/redundancy
       await _storage.write(key: _isConfiguredKey, value: 'true');
+      
       _cachedIsConfigured = true;
       _logger.info('Server marked as configured');
     } catch (e) {
@@ -90,6 +118,10 @@ class ServerConfigService {
     try {
       await _storage.delete(key: _serverUrlKey);
       await _storage.delete(key: _isConfiguredKey);
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_isConfiguredKey);
+      
       _cachedServerUrl = null;
       _cachedIsConfigured = null;
       _logger.info('Server configuration reset');

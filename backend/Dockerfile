@@ -3,11 +3,19 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm install
 
 # Copy source code
-COPY . .
+# Copy source code
+COPY backend/ .
+
+# Copy APK from mobile_app build if it exists
+# This ensures the latest APK is always included in the Docker build
+# Copy APK from mobile_app build
+# This ensures the latest APK is always included in the Docker build
+# We copy directly to the destination. If this fails, it means the file is not in the build context.
+COPY mobile_app/build/app/outputs/flutter-apk/app-release.apk ./downloads/family-tracker.apk
 
 # Build TypeScript
 RUN npm run build
@@ -18,11 +26,13 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copy package files and install production dependencies only
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm install --omit=dev
 
 # Copy built files from builder
+# Copy built files from builder
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/downloads ./downloads
 
 # Set environment
 ENV NODE_ENV=production

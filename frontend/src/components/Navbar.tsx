@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
-import { MapPin, Users, Shield, LogOut, Menu, X, Smartphone, MessageSquare } from 'lucide-react';
+import { MapPin, Users, Shield, LogOut, Menu, X, Smartphone, MessageSquare, Fence } from 'lucide-react';
 import { useState } from 'react';
 import clsx from 'clsx';
 
@@ -14,12 +14,14 @@ export default function Navbar() {
   const navLinks = [
     { path: '/', label: 'Map', icon: MapPin },
     { path: '/family', label: 'Family', icon: Users },
+    { path: '/geofences', label: 'Geofences', icon: Fence },
     { path: '/messages', label: 'Messages', icon: MessageSquare },
     { path: '/owntracks', label: 'Mobile App', icon: Smartphone },
   ];
 
   if (user?.is_admin) {
     navLinks.push({ path: '/admin', label: 'Admin', icon: Shield });
+    navLinks.push({ path: '/geofencing', label: 'Geofencing Admin', icon: Fence });
   }
 
   return (

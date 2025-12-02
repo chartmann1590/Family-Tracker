@@ -4,6 +4,7 @@ import { pool } from '../config/database';
 import { authenticateToken } from '../middleware/auth';
 import { AuthRequest, LocationUpdate } from '../types';
 import { broadcastLocationUpdate } from '../websocket';
+import geofenceService from '../services/geofenceService';
 
 const router = Router();
 
@@ -39,6 +40,19 @@ router.post('/', authenticateToken, async (req: AuthRequest, res: Response) => {
     );
 
     const location = result.rows[0];
+
+    // Check geofences (async, don't wait for it)
+    if (req.user!.family_id) {
+      geofenceService.checkGeofences({
+        userId: req.user!.id,
+        familyId: req.user!.family_id,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        timestamp: location.timestamp,
+      }).catch(error => {
+        console.error('Geofence check error:', error);
+      });
+    }
 
     // Broadcast to WebSocket clients in the same family
     if (req.user!.family_id) {

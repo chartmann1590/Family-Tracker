@@ -131,6 +131,63 @@ export const adminApi = {
     const response = await api.get('/admin/stats');
     return response.data;
   },
+
+  // SMTP Settings
+  getSmtpSettings: async () => {
+    const response = await api.get('/admin/smtp-settings');
+    return response.data;
+  },
+
+  saveSmtpSettings: async (data: any) => {
+    const response = await api.post('/admin/smtp-settings', data);
+    return response.data;
+  },
+
+  testSmtpConnection: async () => {
+    const response = await api.post('/admin/smtp-settings/test');
+    return response.data;
+  },
+
+  // Geofences
+  getAllGeofences: async () => {
+    const response = await api.get('/admin/geofences');
+    return response.data;
+  },
+
+  getViolations: async (limit = 100, offset = 0) => {
+    const response = await api.get('/admin/geofence-violations', {
+      params: { limit, offset },
+    });
+    return response.data;
+  },
+};
+
+// Geofences (User)
+export const geofenceApi = {
+  getGeofences: async () => {
+    const response = await api.get('/geofences');
+    return response.data;
+  },
+
+  createGeofence: async (data: any) => {
+    const response = await api.post('/geofences', data);
+    return response.data;
+  },
+
+  updateGeofence: async (id: number, data: any) => {
+    const response = await api.patch(`/geofences/${id}`, data);
+    return response.data;
+  },
+
+  deleteGeofence: async (id: number) => {
+    const response = await api.delete(`/geofences/${id}`);
+    return response.data;
+  },
+
+  getViolations: async (id: number) => {
+    const response = await api.get(`/geofences/${id}/violations`);
+    return response.data;
+  },
 };
 
 // Messages

@@ -15,6 +15,8 @@ import familyRoutes from './routes/families';
 import owntracksRoutes from './routes/owntracks';
 import adminRoutes from './routes/admin';
 import messageRoutes from './routes/messages';
+import geofenceRoutes from './routes/geofences';
+import emailService from './services/emailService';
 
 dotenv.config();
 
@@ -49,6 +51,7 @@ app.use('/api/families', familyRoutes);
 app.use('/api/owntracks', owntracksRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/geofences', geofenceRoutes);
 
 // APK Download Route
 app.get('/api/download/apk', (req, res) => {
@@ -137,6 +140,9 @@ async function start() {
     // Create admin user
     await createAdminUser();
 
+    // Load SMTP settings if configured
+    await emailService.loadSettings();
+
     // Start listening
     server.listen(PORT, () => {
       console.log('');
@@ -146,6 +152,7 @@ async function start() {
       console.log(`🌐 API: http://localhost:${PORT}/api`);
       console.log(`🔌 WebSocket: ws://localhost:${PORT}/ws`);
       console.log(`📍 OwnTracks: http://localhost:${PORT}/api/owntracks`);
+      console.log(`🛡️  Geofencing: Enabled with email notifications`);
       console.log('==========================');
       console.log('');
     });

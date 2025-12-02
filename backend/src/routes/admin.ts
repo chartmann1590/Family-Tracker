@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { pool } from '../config/database';
 import { authenticateToken, requireAdmin } from '../middleware/auth';
 import { AuthRequest } from '../types';
+import emailService from '../services/emailService';
+import geofenceService from '../services/geofenceService';
 
 const router = Router();
 
@@ -237,6 +239,195 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Get stats error:', error);
     res.status(500).json({ error: 'Failed to retrieve statistics' });
+  }
+});
+
+// ===== SMTP Settings Routes =====
+
+// Get SMTP settings
+router.get('/smtp-settings', async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM smtp_settings ORDER BY id DESC LIMIT 1'
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ smtpSettings: null });
+    }
+
+    // Don't send the password to the frontend
+    const settings = { ...result.rows[0] };
+    delete settings.smtp_password;
+
+    res.json({ smtpSettings: settings });
+  } catch (error) {
+    console.error('Get SMTP settings error:', error);
+    res.status(500).json({ error: 'Failed to retrieve SMTP settings' });
+  }
+});
+
+// Create or update SMTP settings
+router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      smtp_host,
+      smtp_port,
+      smtp_secure,
+      smtp_user,
+      smtp_password,
+      from_email,
+      from_name,
+      admin_email,
+      notification_emails,
+    } = z.object({
+      smtp_host: z.string().min(1),
+      smtp_port: z.number().int().min(1).max(65535),
+      smtp_secure: z.boolean(),
+      smtp_user: z.string().min(1),
+      smtp_password: z.string().min(1),
+      from_email: z.string().email(),
+      from_name: z.string().optional().default('Family Tracker'),
+      admin_email: z.string().email(),
+      notification_emails: z.array(z.string().email()).optional().default([]),
+    }).parse(req.body);
+
+    // Check if settings exist
+    const existingResult = await pool.query(
+      'SELECT id FROM smtp_settings ORDER BY id DESC LIMIT 1'
+    );
+
+    let result;
+    if (existingResult.rows.length > 0) {
+      // Update existing settings
+      result = await pool.query(
+        `UPDATE smtp_settings
+         SET smtp_host = $1, smtp_port = $2, smtp_secure = $3,
+             smtp_user = $4, smtp_password = $5, from_email = $6,
+             from_name = $7, admin_email = $8, notification_emails = $9,
+             updated_at = NOW()
+         WHERE id = $10
+         RETURNING id, smtp_host, smtp_port, smtp_secure, smtp_user, from_email,
+                   from_name, admin_email, notification_emails, created_at, updated_at`,
+        [
+          smtp_host,
+          smtp_port,
+          smtp_secure,
+          smtp_user,
+          smtp_password,
+          from_email,
+          from_name,
+          admin_email,
+          notification_emails,
+          existingResult.rows[0].id,
+        ]
+      );
+    } else {
+      // Insert new settings
+      result = await pool.query(
+        `INSERT INTO smtp_settings
+         (smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password,
+          from_email, from_name, admin_email, notification_emails)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         RETURNING id, smtp_host, smtp_port, smtp_secure, smtp_user, from_email,
+                   from_name, admin_email, notification_emails, created_at, updated_at`,
+        [
+          smtp_host,
+          smtp_port,
+          smtp_secure,
+          smtp_user,
+          smtp_password,
+          from_email,
+          from_name,
+          admin_email,
+          notification_emails,
+        ]
+      );
+    }
+
+    // Reload settings in email service
+    await emailService.loadSettings();
+
+    res.json({ smtpSettings: result.rows[0] });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: error.errors });
+    }
+    console.error('Save SMTP settings error:', error);
+    res.status(500).json({ error: 'Failed to save SMTP settings' });
+  }
+});
+
+// Test SMTP connection
+router.post('/smtp-settings/test', async (req: AuthRequest, res: Response) => {
+  try {
+    await emailService.loadSettings();
+    const success = await emailService.testConnection();
+
+    if (success) {
+      res.json({ success: true, message: 'SMTP connection successful' });
+    } else {
+      res.status(400).json({ success: false, error: 'SMTP connection failed' });
+    }
+  } catch (error) {
+    console.error('Test SMTP connection error:', error);
+    res.status(500).json({ error: 'Failed to test SMTP connection' });
+  }
+});
+
+// ===== Geofence Routes =====
+
+// Get all geofences (for all families)
+router.get('/geofences', async (req: AuthRequest, res: Response) => {
+  try {
+    const result = await pool.query(
+      `SELECT g.*, f.name as family_name, u.name as user_name, c.name as created_by_name
+       FROM geofences g
+       LEFT JOIN families f ON g.family_id = f.id
+       LEFT JOIN users u ON g.user_id = u.id
+       LEFT JOIN users c ON g.created_by = c.id
+       ORDER BY g.created_at DESC`
+    );
+
+    res.json({ geofences: result.rows });
+  } catch (error) {
+    console.error('Get geofences error:', error);
+    res.status(500).json({ error: 'Failed to retrieve geofences' });
+  }
+});
+
+// Get geofence violations
+router.get('/geofence-violations', async (req: AuthRequest, res: Response) => {
+  try {
+    const limit = parseInt(req.query.limit as string) || 100;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const result = await pool.query(
+      `SELECT gv.*, g.name as geofence_name, u.name as user_name,
+              f.name as family_name
+       FROM geofence_violations gv
+       JOIN geofences g ON gv.geofence_id = g.id
+       JOIN users u ON gv.user_id = u.id
+       JOIN families f ON g.family_id = f.id
+       ORDER BY gv.created_at DESC
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    const countResult = await pool.query(
+      'SELECT COUNT(*) as total FROM geofence_violations'
+    );
+
+    res.json({
+      violations: result.rows,
+      pagination: {
+        limit,
+        offset,
+        total: parseInt(countResult.rows[0].total),
+      },
+    });
+  } catch (error) {
+    console.error('Get violations error:', error);
+    res.status(500).json({ error: 'Failed to retrieve violations' });
   }
 });
 

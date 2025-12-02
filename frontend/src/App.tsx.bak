@@ -10,8 +10,6 @@ import AdminPage from './pages/AdminPage';
 import FamilyPage from './pages/FamilyPage';
 import MobileConfigPage from './pages/MobileConfigPage';
 import MessagesPage from './pages/MessagesPage';
-import GeofencingPage from './pages/GeofencingPage';
-import UserGeofencesPage from './pages/UserGeofencesPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import LoadingScreen from './components/LoadingScreen';
 
@@ -82,26 +80,10 @@ function App() {
             }
           />
           <Route
-            path="/geofences"
-            element={
-              <ProtectedRoute>
-                <UserGeofencesPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
             path="/admin"
             element={
               <ProtectedRoute requireAdmin>
                 <AdminPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/geofencing"
-            element={
-              <ProtectedRoute requireAdmin>
-                <GeofencingPage />
               </ProtectedRoute>
             }
           />

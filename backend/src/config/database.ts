@@ -106,6 +106,74 @@ export async function initDatabase() {
       ON messages(family_id, created_at DESC)
     `);
 
+    // SMTP Settings table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS smtp_settings (
+        id SERIAL PRIMARY KEY,
+        smtp_host VARCHAR(255) NOT NULL,
+        smtp_port INTEGER NOT NULL,
+        smtp_secure BOOLEAN DEFAULT TRUE,
+        smtp_user VARCHAR(255) NOT NULL,
+        smtp_password VARCHAR(255) NOT NULL,
+        from_email VARCHAR(255) NOT NULL,
+        from_name VARCHAR(255) DEFAULT 'Family Tracker',
+        admin_email VARCHAR(255) NOT NULL,
+        notification_emails TEXT[], -- Array of additional emails to notify
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Geofences table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS geofences (
+        id SERIAL PRIMARY KEY,
+        family_id INTEGER NOT NULL REFERENCES families(id) ON DELETE CASCADE,
+        name VARCHAR(255) NOT NULL,
+        latitude DOUBLE PRECISION NOT NULL,
+        longitude DOUBLE PRECISION NOT NULL,
+        radius INTEGER NOT NULL, -- radius in meters
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, -- specific user or NULL for all family
+        is_active BOOLEAN DEFAULT TRUE,
+        notify_on_exit BOOLEAN DEFAULT TRUE,
+        notify_on_enter BOOLEAN DEFAULT FALSE,
+        created_by INTEGER REFERENCES users(id),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Geofence violations table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS geofence_violations (
+        id SERIAL PRIMARY KEY,
+        geofence_id INTEGER NOT NULL REFERENCES geofences(id) ON DELETE CASCADE,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        violation_type VARCHAR(50) NOT NULL, -- 'exit' or 'enter'
+        latitude DOUBLE PRECISION NOT NULL,
+        longitude DOUBLE PRECISION NOT NULL,
+        notified BOOLEAN DEFAULT FALSE,
+        notification_sent_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create indexes for geofence queries
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_geofences_family
+      ON geofences(family_id, is_active)
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_geofence_violations_geofence
+      ON geofence_violations(geofence_id, created_at DESC)
+    `);
+
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_geofence_violations_user
+      ON geofence_violations(user_id, created_at DESC)
+    `);
+
     await client.query('COMMIT');
     console.log('✅ Database schema initialized successfully');
   } catch (error) {

@@ -346,7 +346,7 @@ export default function UserGeofencesPage() {
               <div className="relative w-full h-[600px]">
                 <MapContainer
                   center={[selectedGeofence.latitude, selectedGeofence.longitude]}
-                  zoom={14}
+                  zoom={17}
                   style={{ height: '100%', width: '100%' }}
                   zoomControl={true}
                 >

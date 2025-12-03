@@ -196,6 +196,39 @@ This is an automated notification from Family Tracker.
   }
 
   /**
+   * Send a generic email notification
+   */
+  public async sendEmail(
+    recipient: 'admin' | string,
+    subject: string,
+    html: string
+  ): Promise<boolean> {
+    if (!this.settings || !this.transporter) {
+      console.warn('⚠️  Cannot send email: SMTP not configured');
+      return false;
+    }
+
+    try {
+      const recipients = recipient === 'admin'
+        ? [this.settings.admin_email, ...(this.settings.notification_emails || [])]
+        : [recipient];
+
+      await this.transporter.sendMail({
+        from: `"${this.settings.from_name}" <${this.settings.from_email}>`,
+        to: recipients.join(', '),
+        subject,
+        html,
+      });
+
+      console.log(`✅ Email sent to: ${recipients.join(', ')}`);
+      return true;
+    } catch (error) {
+      console.error('❌ Error sending email:', error);
+      return false;
+    }
+  }
+
+  /**
    * Test SMTP connection
    */
   public async testConnection(): Promise<boolean> {

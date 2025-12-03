@@ -25,6 +25,10 @@ export default function AdminPage() {
     from_name: 'Family Tracker',
     admin_email: '',
     notification_emails: [] as string[],
+    notify_low_battery: false,
+    low_battery_threshold: 20,
+    notify_device_offline: false,
+    device_offline_minutes: 30,
   });
   const [newEmail, setNewEmail] = useState('');
 
@@ -53,6 +57,10 @@ export default function AdminPage() {
           from_name: smtpData.smtpSettings.from_name || 'Family Tracker',
           admin_email: smtpData.smtpSettings.admin_email || '',
           notification_emails: smtpData.smtpSettings.notification_emails || [],
+          notify_low_battery: smtpData.smtpSettings.notify_low_battery || false,
+          low_battery_threshold: smtpData.smtpSettings.low_battery_threshold || 20,
+          notify_device_offline: smtpData.smtpSettings.notify_device_offline || false,
+          device_offline_minutes: smtpData.smtpSettings.device_offline_minutes || 30,
         });
       }
     } catch (error: any) {
@@ -506,6 +514,81 @@ export default function AdminPage() {
                         ))}
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Device Monitoring Settings */}
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Device Monitoring Alerts</h3>
+                  <div className="space-y-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <p className="text-sm text-blue-800">
+                      Receive email notifications when family members' devices have low battery or haven't updated in a while.
+                    </p>
+
+                    {/* Low Battery Alerts */}
+                    <div className="space-y-3">
+                      <label className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={smtpForm.notify_low_battery}
+                          onChange={(e) => setSmtpForm({ ...smtpForm, notify_low_battery: e.target.checked })}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-600 h-5 w-5"
+                        />
+                        <span className="text-sm font-medium text-gray-900">
+                          Low Battery Notifications
+                        </span>
+                      </label>
+
+                      {smtpForm.notify_low_battery && (
+                        <div className="ml-8 flex items-center gap-2">
+                          <label className="text-sm text-gray-700">Alert when battery drops to:</label>
+                          <input
+                            type="number"
+                            min="5"
+                            max="50"
+                            value={smtpForm.low_battery_threshold}
+                            onChange={(e) => setSmtpForm({ ...smtpForm, low_battery_threshold: parseInt(e.target.value) || 20 })}
+                            className="input w-20 text-center"
+                          />
+                          <span className="text-sm text-gray-700">%</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Device Offline Alerts */}
+                    <div className="space-y-3">
+                      <label className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={smtpForm.notify_device_offline}
+                          onChange={(e) => setSmtpForm({ ...smtpForm, notify_device_offline: e.target.checked })}
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-600 h-5 w-5"
+                        />
+                        <span className="text-sm font-medium text-gray-900">
+                          Device Offline Notifications
+                        </span>
+                      </label>
+
+                      {smtpForm.notify_device_offline && (
+                        <div className="ml-8 flex items-center gap-2">
+                          <label className="text-sm text-gray-700">Alert when device hasn't updated for:</label>
+                          <input
+                            type="number"
+                            min="10"
+                            max="1440"
+                            value={smtpForm.device_offline_minutes}
+                            onChange={(e) => setSmtpForm({ ...smtpForm, device_offline_minutes: parseInt(e.target.value) || 30 })}
+                            className="input w-24 text-center"
+                          />
+                          <span className="text-sm text-gray-700">minutes</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-gray-600 mt-3">
+                      Notifications are sent to the admin email and additional notification emails configured above.
+                      To avoid spam, notifications are sent at most once every 6 hours per user.
+                    </p>
                   </div>
                 </div>
 

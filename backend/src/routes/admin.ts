@@ -279,6 +279,10 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
       from_name,
       admin_email,
       notification_emails,
+      notify_low_battery,
+      low_battery_threshold,
+      notify_device_offline,
+      device_offline_minutes,
     } = z.object({
       smtp_host: z.string().min(1),
       smtp_port: z.number().int().min(1).max(65535),
@@ -289,6 +293,10 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
       from_name: z.string().optional().default('Family Tracker'),
       admin_email: z.string().email(),
       notification_emails: z.array(z.string().email()).optional().default([]),
+      notify_low_battery: z.boolean().optional().default(false),
+      low_battery_threshold: z.number().int().min(5).max(50).optional().default(20),
+      notify_device_offline: z.boolean().optional().default(false),
+      device_offline_minutes: z.number().int().min(10).max(1440).optional().default(30),
     }).parse(req.body);
 
     // Check if settings exist
@@ -304,10 +312,15 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
          SET smtp_host = $1, smtp_port = $2, smtp_secure = $3,
              smtp_user = $4, smtp_password = $5, from_email = $6,
              from_name = $7, admin_email = $8, notification_emails = $9,
+             notify_low_battery = $10, low_battery_threshold = $11,
+             notify_device_offline = $12, device_offline_minutes = $13,
              updated_at = NOW()
-         WHERE id = $10
+         WHERE id = $14
          RETURNING id, smtp_host, smtp_port, smtp_secure, smtp_user, from_email,
-                   from_name, admin_email, notification_emails, created_at, updated_at`,
+                   from_name, admin_email, notification_emails,
+                   notify_low_battery, low_battery_threshold,
+                   notify_device_offline, device_offline_minutes,
+                   created_at, updated_at`,
         [
           smtp_host,
           smtp_port,
@@ -318,6 +331,10 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
           from_name,
           admin_email,
           notification_emails,
+          notify_low_battery,
+          low_battery_threshold,
+          notify_device_offline,
+          device_offline_minutes,
           existingResult.rows[0].id,
         ]
       );
@@ -326,10 +343,15 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
       result = await pool.query(
         `INSERT INTO smtp_settings
          (smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password,
-          from_email, from_name, admin_email, notification_emails)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          from_email, from_name, admin_email, notification_emails,
+          notify_low_battery, low_battery_threshold,
+          notify_device_offline, device_offline_minutes)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
          RETURNING id, smtp_host, smtp_port, smtp_secure, smtp_user, from_email,
-                   from_name, admin_email, notification_emails, created_at, updated_at`,
+                   from_name, admin_email, notification_emails,
+                   notify_low_battery, low_battery_threshold,
+                   notify_device_offline, device_offline_minutes,
+                   created_at, updated_at`,
         [
           smtp_host,
           smtp_port,
@@ -340,6 +362,10 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
           from_name,
           admin_email,
           notification_emails,
+          notify_low_battery,
+          low_battery_threshold,
+          notify_device_offline,
+          device_offline_minutes,
         ]
       );
     }

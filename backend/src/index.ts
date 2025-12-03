@@ -17,6 +17,7 @@ import adminRoutes from './routes/admin';
 import messageRoutes from './routes/messages';
 import geofenceRoutes from './routes/geofences';
 import emailService from './services/emailService';
+import deviceMonitorService from './services/deviceMonitorService';
 
 dotenv.config();
 
@@ -143,6 +144,9 @@ async function start() {
     // Load SMTP settings if configured
     await emailService.loadSettings();
 
+    // Start device monitoring service
+    await deviceMonitorService.start();
+
     // Start listening
     server.listen(PORT, () => {
       console.log('');
@@ -153,6 +157,7 @@ async function start() {
       console.log(`🔌 WebSocket: ws://localhost:${PORT}/ws`);
       console.log(`📍 OwnTracks: http://localhost:${PORT}/api/owntracks`);
       console.log(`🛡️  Geofencing: Enabled with email notifications`);
+      console.log(`🔋 Device Monitoring: Battery & Offline Alerts`);
       console.log('==========================');
       console.log('');
     });
@@ -165,6 +170,7 @@ async function start() {
 // Handle shutdown gracefully
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, shutting down gracefully...');
+  deviceMonitorService.stop();
   server.close(() => {
     pool.end();
     process.exit(0);
@@ -173,6 +179,7 @@ process.on('SIGTERM', async () => {
 
 process.on('SIGINT', async () => {
   console.log('SIGINT received, shutting down gracefully...');
+  deviceMonitorService.stop();
   server.close(() => {
     pool.end();
     process.exit(0);

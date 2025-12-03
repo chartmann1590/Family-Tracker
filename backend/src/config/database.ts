@@ -124,6 +124,29 @@ export async function initDatabase() {
       )
     `);
 
+    // Add notification settings columns if they don't exist
+    await client.query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                      WHERE table_name='smtp_settings' AND column_name='notify_low_battery') THEN
+          ALTER TABLE smtp_settings ADD COLUMN notify_low_battery BOOLEAN DEFAULT FALSE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                      WHERE table_name='smtp_settings' AND column_name='low_battery_threshold') THEN
+          ALTER TABLE smtp_settings ADD COLUMN low_battery_threshold INTEGER DEFAULT 20;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                      WHERE table_name='smtp_settings' AND column_name='notify_device_offline') THEN
+          ALTER TABLE smtp_settings ADD COLUMN notify_device_offline BOOLEAN DEFAULT FALSE;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                      WHERE table_name='smtp_settings' AND column_name='device_offline_minutes') THEN
+          ALTER TABLE smtp_settings ADD COLUMN device_offline_minutes INTEGER DEFAULT 30;
+        END IF;
+      END $$;
+    `);
+
     // Geofences table
     await client.query(`
       CREATE TABLE IF NOT EXISTS geofences (
@@ -172,6 +195,24 @@ export async function initDatabase() {
     await client.query(`
       CREATE INDEX IF NOT EXISTS idx_geofence_violations_user
       ON geofence_violations(user_id, created_at DESC)
+    `);
+
+    // Device status notifications table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS device_status_notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        notification_type VARCHAR(50) NOT NULL, -- 'low_battery' or 'device_offline'
+        sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        battery_level INTEGER,
+        minutes_offline INTEGER
+      )
+    `);
+
+    // Create index for device status notifications
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_device_status_notifications_user
+      ON device_status_notifications(user_id, notification_type, sent_at DESC)
     `);
 
     await client.query('COMMIT');

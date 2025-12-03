@@ -88,6 +88,9 @@ dependencies:
   # Background tasks for location tracking
   workmanager: ^0.9.0
 
+  # Battery level monitoring
+  battery_plus: ^6.0.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

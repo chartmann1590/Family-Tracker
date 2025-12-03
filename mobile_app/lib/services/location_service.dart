@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:battery_plus/battery_plus.dart';
 import 'api_service.dart';
 
 class LocationService {
   final ApiService _apiService;
+  final Battery _battery = Battery();
   StreamSubscription<Position>? _positionStreamSubscription;
   Timer? _backgroundTimer;
   bool _isTracking = false;
@@ -66,13 +68,13 @@ class LocationService {
     }
   }
 
-  // Get battery level (approximation based on location accuracy)
+  // Get battery level
   Future<int?> getBatteryLevel() async {
     try {
-      // Note: For actual battery level, you'd need battery_plus package
-      // For now, we'll return null and let the backend handle it
-      return null;
+      final batteryLevel = await _battery.batteryLevel;
+      return batteryLevel;
     } catch (e) {
+      print('Error getting battery level: $e');
       return null;
     }
   }

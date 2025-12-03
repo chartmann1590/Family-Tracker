@@ -1,8 +1,24 @@
 import { useEffect, useState } from 'react';
-import { geofenceApi } from '../lib/api';
+import { geofenceApi, locationApi } from '../lib/api';
 import Navbar from '../components/Navbar';
-import { MapPin, Loader2, AlertCircle, Users, User, MapPinned } from 'lucide-react';
+import { MapPin, Loader2, AlertCircle, Users, User, MapPinned, X } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { MapContainer, TileLayer, Marker, Circle, Popup } from 'react-leaflet';
+import { Icon } from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix for default marker icons in React-Leaflet
+import icon from 'leaflet/dist/images/marker-icon.png';
+import iconShadow from 'leaflet/dist/images/marker-shadow.png';
+
+const DefaultIcon = new Icon({
+  iconUrl: icon,
+  shadowUrl: iconShadow,
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
 interface Geofence {
   id: number;
@@ -38,6 +54,8 @@ export default function UserGeofencesPage() {
   const [violations, setViolations] = useState<{ [key: number]: Violation[] }>({});
   const [isLoading, setIsLoading] = useState(true);
   const [expandedGeofence, setExpandedGeofence] = useState<number | null>(null);
+  const [selectedGeofence, setSelectedGeofence] = useState<Geofence | null>(null);
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -75,6 +93,22 @@ export default function UserGeofencesPage() {
       if (!violations[geofenceId]) {
         loadViolations(geofenceId);
       }
+    }
+  };
+
+  const handleShowMap = async (geofence: Geofence) => {
+    setSelectedGeofence(geofence);
+    try {
+      const data = await locationApi.getFamilyLocations();
+      const currentUserLocation = data.locations.find(loc => loc.location);
+      if (currentUserLocation) {
+        setUserLocation({
+          latitude: currentUserLocation.location.latitude,
+          longitude: currentUserLocation.location.longitude,
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load user location:', error);
     }
   };
 
@@ -178,14 +212,12 @@ export default function UserGeofencesPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Location</p>
-                      <a
-                        href={`https://www.google.com/maps?q=${geofence.latitude},${geofence.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm text-primary-600 hover:underline font-medium"
+                      <button
+                        onClick={() => handleShowMap(geofence)}
+                        className="text-sm text-primary-600 hover:underline font-medium text-left"
                       >
                         {geofence.latitude.toFixed(4)}, {geofence.longitude.toFixed(4)}
-                      </a>
+                      </button>
                     </div>
                     <div className="bg-gray-50 p-3 rounded-lg">
                       <p className="text-xs text-gray-600 mb-1">Radius</p>
@@ -286,6 +318,117 @@ export default function UserGeofencesPage() {
             </div>
           )}
         </div>
+
+        {/* Map Modal */}
+        {selectedGeofence && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] flex flex-col">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-4 border-b border-gray-200">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">{selectedGeofence.name}</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Radius: {formatDistance(selectedGeofence.radius)}
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setSelectedGeofence(null);
+                    setUserLocation(null);
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
+              </div>
+
+              {/* Map Container */}
+              <div className="flex-1 relative min-h-[500px]">
+                <MapContainer
+                  center={[selectedGeofence.latitude, selectedGeofence.longitude]}
+                  zoom={14}
+                  className="w-full h-full"
+                  zoomControl={true}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+
+                  {/* Geofence Center Marker */}
+                  <Marker
+                    position={[selectedGeofence.latitude, selectedGeofence.longitude]}
+                    icon={DefaultIcon}
+                  >
+                    <Popup>
+                      <div className="p-2">
+                        <h4 className="font-bold text-gray-900">{selectedGeofence.name}</h4>
+                        <p className="text-sm text-gray-600">Geofence Center</p>
+                      </div>
+                    </Popup>
+                  </Marker>
+
+                  {/* Geofence Radius Circle */}
+                  <Circle
+                    center={[selectedGeofence.latitude, selectedGeofence.longitude]}
+                    radius={selectedGeofence.radius}
+                    pathOptions={{
+                      color: selectedGeofence.is_active ? '#3b82f6' : '#9ca3af',
+                      fillColor: selectedGeofence.is_active ? '#3b82f6' : '#9ca3af',
+                      fillOpacity: 0.2,
+                      weight: 2,
+                    }}
+                  />
+
+                  {/* User Location Marker (if available) */}
+                  {userLocation && (
+                    <Marker
+                      position={[userLocation.latitude, userLocation.longitude]}
+                      icon={new Icon({
+                        iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+                          <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/>
+                            <circle cx="12" cy="10" r="3"/>
+                          </svg>
+                        `),
+                        iconSize: [30, 30],
+                        iconAnchor: [15, 30],
+                        popupAnchor: [0, -30],
+                      })}
+                    >
+                      <Popup>
+                        <div className="p-2">
+                          <h4 className="font-bold text-gray-900">Your Location</h4>
+                          <p className="text-sm text-gray-600">Current position</p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  )}
+                </MapContainer>
+
+                {/* Legend */}
+                <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-3 z-[1000]">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-blue-600"></div>
+                      <span className="text-gray-700">Geofence Center</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 rounded-full border-2 border-blue-500 bg-blue-500 opacity-30"></div>
+                      <span className="text-gray-700">Geofence Radius</span>
+                    </div>
+                    {userLocation && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 rounded-full bg-green-500 border-2 border-green-600"></div>
+                        <span className="text-gray-700">Your Location</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

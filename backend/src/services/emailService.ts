@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import type { Transporter } from 'nodemailer';
 import { pool } from '../config/database';
 
 export interface SMTPSettings {
@@ -15,7 +16,7 @@ export interface SMTPSettings {
 
 export class EmailService {
   private static instance: EmailService;
-  private transporter: nodemailer.Transporter | null = null;
+  private transporter: Transporter | null = null;
   private settings: SMTPSettings | null = null;
 
   private constructor() {}

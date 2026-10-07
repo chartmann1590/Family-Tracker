@@ -196,7 +196,7 @@ export default function MessagesPage() {
                     >
                       <div
                         className={clsx(
-                          'max-w-md sm:max-w-lg rounded-2xl px-4 py-3 shadow-sm',
+                          'max-w-md sm:max-w-lg rounded-2xl px-4 py-3 shadow-xs',
                           isOwnMessage
                             ? 'bg-primary-600 text-white'
                             : 'bg-white text-gray-900 border border-gray-200'
@@ -207,7 +207,7 @@ export default function MessagesPage() {
                             {message.sender_name}
                           </p>
                         )}
-                        <p className="text-sm break-words whitespace-pre-wrap">
+                        <p className="text-sm wrap-break-word whitespace-pre-wrap">
                           {message.content}
                         </p>
                         <p

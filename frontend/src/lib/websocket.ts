@@ -2,7 +2,7 @@ type MessageHandler = (data: any) => void;
 
 class WebSocketClient {
   private ws: WebSocket | null = null;
-  private reconnectTimer: number | null = null;
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private handlers: Map<string, Set<MessageHandler>> = new Map();
   private url: string = '';
   private shouldReconnect: boolean = true;

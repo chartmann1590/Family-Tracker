@@ -100,7 +100,7 @@ export default function MobileConfigPage() {
               {/* What is Family Tracker App */}
               <div className="card">
                 <div className="flex items-start gap-3 mb-4">
-                  <Smartphone className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
+                  <Smartphone className="w-6 h-6 text-primary-600 shrink-0 mt-1" />
                   <div>
                     <h2 className="text-xl font-bold text-gray-900 mb-2">
                       Family Tracker Mobile App
@@ -134,7 +134,7 @@ export default function MobileConfigPage() {
               {/* Download App */}
               <div className="card">
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold shrink-0">
                     1
                   </div>
                   <div className="flex-1">
@@ -193,7 +193,7 @@ export default function MobileConfigPage() {
               {/* Configure Server */}
               <div className="card">
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold shrink-0">
                     2
                   </div>
                   <div className="flex-1">
@@ -238,7 +238,7 @@ export default function MobileConfigPage() {
               {/* Login and Use */}
               <div className="card">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold shrink-0">
                     3
                   </div>
                   <div className="flex-1">
@@ -273,7 +273,7 @@ export default function MobileConfigPage() {
               {/* Troubleshooting */}
               <div className="card">
                 <div className="flex items-start gap-3">
-                  <Settings className="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" />
+                  <Settings className="w-6 h-6 text-orange-600 shrink-0 mt-1" />
                   <div>
                     <h2 className="text-xl font-bold text-gray-900 mb-4">
                       Troubleshooting
@@ -327,7 +327,7 @@ export default function MobileConfigPage() {
               {/* What is OwnTracks */}
               <div className="card">
                 <div className="flex items-start gap-3 mb-4">
-                  <Radio className="w-6 h-6 text-primary-600 flex-shrink-0 mt-1" />
+                  <Radio className="w-6 h-6 text-primary-600 shrink-0 mt-1" />
                   <div>
                     <h2 className="text-xl font-bold text-gray-900 mb-2">
                       What is OwnTracks?
@@ -358,7 +358,7 @@ export default function MobileConfigPage() {
               {/* Step 1: Download */}
               <div className="card">
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold shrink-0">
                     1
                   </div>
                   <div className="flex-1">
@@ -392,7 +392,7 @@ export default function MobileConfigPage() {
               {/* Step 2: Get Your Token */}
               <div className="card">
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold shrink-0">
                     2
                   </div>
                   <div className="flex-1">
@@ -465,7 +465,7 @@ export default function MobileConfigPage() {
               {/* Step 3: Configure OwnTracks */}
               <div className="card">
                 <div className="flex items-start gap-3 mb-4">
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold shrink-0">
                     3
                   </div>
                   <div className="flex-1">
@@ -524,7 +524,7 @@ export default function MobileConfigPage() {
                               <div>
                                 <span>Configure <strong>HTTP Settings</strong>:</span>
                                 <ul className="ml-4 mt-1 space-y-1">
-                                  <li>• URL: <code className="bg-white px-1 rounded">{serverUrl}</code></li>
+                                  <li>• URL: <code className="bg-white px-1 rounded-sm">{serverUrl}</code></li>
                                   <li>• Authentication: <strong>ON</strong></li>
                                   <li>• User ID: Your email address</li>
                                   <li>• Password: Leave empty</li>
@@ -540,8 +540,8 @@ export default function MobileConfigPage() {
                                 <ul className="ml-4 mt-1 space-y-1">
                                   <li>• Tap <strong>HTTP Headers</strong></li>
                                   <li>• Add a new header</li>
-                                  <li>• Key: <code className="bg-white px-1 rounded">Authorization</code></li>
-                                  <li>• Value: <code className="bg-white px-1 rounded">Bearer {token ? token.substring(0, 20) + '...' : 'YOUR_TOKEN'}</code></li>
+                                  <li>• Key: <code className="bg-white px-1 rounded-sm">Authorization</code></li>
+                                  <li>• Value: <code className="bg-white px-1 rounded-sm">Bearer {token ? token.substring(0, 20) + '...' : 'YOUR_TOKEN'}</code></li>
                                 </ul>
                               </div>
                             </li>
@@ -577,7 +577,7 @@ export default function MobileConfigPage() {
                               <div>
                                 <span>Configure <strong>Connection Settings</strong>:</span>
                                 <ul className="ml-4 mt-1 space-y-1">
-                                  <li>• URL: <code className="bg-white px-1 rounded">{serverUrl}</code></li>
+                                  <li>• URL: <code className="bg-white px-1 rounded-sm">{serverUrl}</code></li>
                                   <li>• Authentication: <strong>Enabled</strong></li>
                                   <li>• Username: Your email address</li>
                                   <li>• Password: Leave empty</li>
@@ -591,8 +591,8 @@ export default function MobileConfigPage() {
                               <div>
                                 <span>Scroll to <strong>Advanced</strong> and add <strong>Custom HTTP Headers</strong>:</span>
                                 <ul className="ml-4 mt-1 space-y-1">
-                                  <li>• Name: <code className="bg-white px-1 rounded">Authorization</code></li>
-                                  <li>• Value: <code className="bg-white px-1 rounded">Bearer {token ? token.substring(0, 20) + '...' : 'YOUR_TOKEN'}</code></li>
+                                  <li>• Name: <code className="bg-white px-1 rounded-sm">Authorization</code></li>
+                                  <li>• Value: <code className="bg-white px-1 rounded-sm">Bearer {token ? token.substring(0, 20) + '...' : 'YOUR_TOKEN'}</code></li>
                                 </ul>
                               </div>
                             </li>
@@ -611,7 +611,7 @@ export default function MobileConfigPage() {
               {/* Step 4: Test Connection */}
               <div className="card">
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                  <div className="w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white font-bold shrink-0">
                     4
                   </div>
                   <div className="flex-1">
@@ -642,7 +642,7 @@ export default function MobileConfigPage() {
               {/* Troubleshooting */}
               <div className="card">
                 <div className="flex items-start gap-3">
-                  <Settings className="w-6 h-6 text-orange-600 flex-shrink-0 mt-1" />
+                  <Settings className="w-6 h-6 text-orange-600 shrink-0 mt-1" />
                   <div>
                     <h2 className="text-xl font-bold text-gray-900 mb-4">
                       Troubleshooting
@@ -652,7 +652,7 @@ export default function MobileConfigPage() {
                         <h3 className="font-semibold text-gray-900 mb-2">Location Not Updating?</h3>
                         <ul className="space-y-1 ml-4">
                           <li>• Ensure the Authorization header is set correctly with "Bearer" prefix</li>
-                          <li>• Check that the server URL is correct: <code className="bg-gray-100 px-1 rounded">{serverUrl}</code></li>
+                          <li>• Check that the server URL is correct: <code className="bg-gray-100 px-1 rounded-sm">{serverUrl}</code></li>
                           <li>• Verify you're a member of a family (go to Family page)</li>
                           <li>• Check OwnTracks logs for error messages</li>
                         </ul>

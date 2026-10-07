@@ -57,7 +57,7 @@ export default function FamilyMap({ locations }: FamilyMapProps) {
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
         </MapContainer>
-        <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-sm">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-xs">
           <div className="text-center p-8 bg-white rounded-xl shadow-lg">
             <Navigation className="w-12 h-12 text-gray-400 mx-auto mb-3" />
             <p className="text-gray-600 font-medium">

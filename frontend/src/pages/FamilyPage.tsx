@@ -291,10 +291,10 @@ export default function FamilyPage() {
           {/* Mobile App Setup */}
           <Link
             to="/owntracks"
-            className="block card hover:shadow-xl transition-all duration-300 cursor-pointer bg-gradient-to-br from-primary-50 via-primary-100 to-blue-100 border-2 border-primary-200 hover:border-primary-400 group"
+            className="block card hover:shadow-xl transition-all duration-300 cursor-pointer bg-linear-to-br from-primary-50 via-primary-100 to-blue-100 border-2 border-primary-200 hover:border-primary-400 group"
           >
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-              <div className="w-14 h-14 bg-gradient-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
+              <div className="w-14 h-14 bg-linear-to-br from-primary-600 to-primary-700 rounded-xl flex items-center justify-center shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300">
                 <Smartphone className="w-7 h-7 text-white" />
               </div>
               <div className="flex-1">
@@ -305,7 +305,7 @@ export default function FamilyPage() {
                   Share your location with family members using the mobile tracking app
                 </p>
               </div>
-              <ArrowRight className="w-6 h-6 text-primary-600 flex-shrink-0 group-hover:translate-x-1 transition-transform duration-300" />
+              <ArrowRight className="w-6 h-6 text-primary-600 shrink-0 group-hover:translate-x-1 transition-transform duration-300" />
             </div>
           </Link>
 

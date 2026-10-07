@@ -86,7 +86,7 @@ export default function DashboardPage() {
           {/* Mobile List Toggle */}
           <button
             onClick={() => setIsMobileListOpen(!isMobileListOpen)}
-            className="lg:hidden absolute bottom-8 right-8 btn btn-primary shadow-lg z-[1000]"
+            className="lg:hidden absolute bottom-8 right-8 btn btn-primary shadow-lg z-1000"
           >
             <Users className="w-5 h-5 mr-2" />
             Family ({locations.length})
@@ -100,7 +100,7 @@ export default function DashboardPage() {
 
         {/* Location List - Mobile */}
         {isMobileListOpen && (
-          <div className="lg:hidden fixed inset-0 z-[1001] bg-black/50 animate-fade-in">
+          <div className="lg:hidden fixed inset-0 z-1001 bg-black/50 animate-fade-in">
             <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl max-h-[80vh] overflow-y-auto animate-slide-up">
               <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
                 <h3 className="text-lg font-bold text-gray-900">

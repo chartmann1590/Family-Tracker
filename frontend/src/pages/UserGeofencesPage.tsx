@@ -176,7 +176,7 @@ export default function UserGeofencesPage() {
                 <div key={geofence.id} className="card">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-start gap-3">
-                      <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center shrink-0">
                         <MapPinned className="w-6 h-6 text-primary-600" />
                       </div>
                       <div>
@@ -229,12 +229,12 @@ export default function UserGeofencesPage() {
                       <p className="text-xs text-gray-600 mb-1">Notifications</p>
                       <div className="flex gap-2">
                         {geofence.notify_on_enter && (
-                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">
+                          <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-sm font-medium">
                             Enter
                           </span>
                         )}
                         {geofence.notify_on_exit && (
-                          <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded font-medium">
+                          <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-sm font-medium">
                             Exit
                           </span>
                         )}
@@ -280,7 +280,7 @@ export default function UserGeofencesPage() {
                                     </span>
                                     <span
                                       className={
-                                        'text-xs px-2 py-1 rounded font-medium ' +
+                                        'text-xs px-2 py-1 rounded-sm font-medium ' +
                                         (violation.violation_type === 'exit'
                                           ? 'bg-red-100 text-red-700'
                                           : 'bg-green-100 text-green-700')
@@ -407,7 +407,7 @@ export default function UserGeofencesPage() {
                 </MapContainer>
 
                 {/* Legend */}
-                <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-3 z-[1000]">
+                <div className="absolute bottom-4 right-4 bg-white rounded-lg shadow-lg p-3 z-1000">
                   <div className="space-y-2 text-sm">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-blue-600"></div>

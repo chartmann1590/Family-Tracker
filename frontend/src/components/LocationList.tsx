@@ -85,7 +85,7 @@ export default function LocationList({ locations }: LocationListProps) {
               )}
 
               <div className="flex items-start gap-2 text-gray-600 pt-2 border-t border-gray-200 mt-2">
-                <MapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                <MapPin className="w-4 h-4 mt-0.5 shrink-0" />
                 <div className="text-xs font-mono">
                   <p>{loc.location.latitude.toFixed(6)}°N</p>
                   <p>{loc.location.longitude.toFixed(6)}°E</p>

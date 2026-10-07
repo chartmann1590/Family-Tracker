@@ -391,12 +391,12 @@ export default function GeofencingPage() {
                           <td className="py-3 px-4 text-sm text-gray-600">
                             <div className="flex gap-2">
                               {geofence.notify_on_enter && (
-                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded font-medium">
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-sm font-medium">
                                   Enter
                                 </span>
                               )}
                               {geofence.notify_on_exit && (
-                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded font-medium">
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-sm font-medium">
                                   Exit
                                 </span>
                               )}
@@ -710,7 +710,7 @@ export default function GeofencingPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, notify_on_enter: e.target.checked })
                       }
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-600"
+                      className="rounded-sm border-gray-300 text-primary-600 focus:ring-primary-600"
                     />
                     <span className="text-sm text-gray-700">
                       Send notification when entering this area
@@ -723,7 +723,7 @@ export default function GeofencingPage() {
                       onChange={(e) =>
                         setFormData({ ...formData, notify_on_exit: e.target.checked })
                       }
-                      className="rounded border-gray-300 text-primary-600 focus:ring-primary-600"
+                      className="rounded-sm border-gray-300 text-primary-600 focus:ring-primary-600"
                     />
                     <span className="text-sm text-gray-700">
                       Send notification when exiting this area
@@ -739,7 +739,7 @@ export default function GeofencingPage() {
                         onChange={(e) =>
                           setFormData({ ...formData, is_active: e.target.checked })
                         }
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-600"
+                        className="rounded-sm border-gray-300 text-primary-600 focus:ring-primary-600"
                       />
                       <span className="text-sm font-medium text-gray-700">
                         Geofence is active

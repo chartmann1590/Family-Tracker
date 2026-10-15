@@ -144,6 +144,10 @@ export async function initDatabase() {
                       WHERE table_name='smtp_settings' AND column_name='device_offline_minutes') THEN
           ALTER TABLE smtp_settings ADD COLUMN device_offline_minutes INTEGER DEFAULT 30;
         END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                      WHERE table_name='smtp_settings' AND column_name='timezone') THEN
+          ALTER TABLE smtp_settings ADD COLUMN timezone VARCHAR(100) DEFAULT 'UTC';
+        END IF;
       END $$;
     `);
 

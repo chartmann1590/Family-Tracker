@@ -18,6 +18,7 @@ import messageRoutes from './routes/messages';
 import geofenceRoutes from './routes/geofences';
 import emailService from './services/emailService';
 import deviceMonitorService from './services/deviceMonitorService';
+import timezoneService from './utils/timezone';
 
 dotenv.config();
 
@@ -143,6 +144,10 @@ async function start() {
 
     // Load SMTP settings if configured
     await emailService.loadSettings();
+
+    // Load timezone settings
+    const timezone = await timezoneService.loadTimezone();
+    console.log(`🕐 Timezone configured: ${timezone}`);
 
     // Start device monitoring service
     await deviceMonitorService.start();

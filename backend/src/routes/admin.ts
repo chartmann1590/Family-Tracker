@@ -6,6 +6,7 @@ import { authenticateToken, requireAdmin } from '../middleware/auth';
 import { AuthRequest } from '../types';
 import emailService from '../services/emailService';
 import geofenceService from '../services/geofenceService';
+import timezoneService from '../utils/timezone';
 
 const router = Router();
 
@@ -242,6 +243,19 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// ===== Timezone Routes =====
+
+// Get all available timezones
+router.get('/timezones', async (req: AuthRequest, res: Response) => {
+  try {
+    const timezones = timezoneService.getAllTimezones();
+    res.json({ timezones });
+  } catch (error) {
+    console.error('Get timezones error:', error);
+    res.status(500).json({ error: 'Failed to retrieve timezones' });
+  }
+});
+
 // ===== SMTP Settings Routes =====
 
 // Get SMTP settings
@@ -283,6 +297,7 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
       low_battery_threshold,
       notify_device_offline,
       device_offline_minutes,
+      timezone,
     } = z.object({
       smtp_host: z.string().min(1),
       smtp_port: z.number().int().min(1).max(65535),
@@ -297,6 +312,7 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
       low_battery_threshold: z.number().int().min(5).max(50).optional().default(20),
       notify_device_offline: z.boolean().optional().default(false),
       device_offline_minutes: z.number().int().min(10).max(1440).optional().default(30),
+      timezone: z.string().optional().default('UTC'),
     }).parse(req.body);
 
     // Check if settings exist
@@ -314,12 +330,12 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
              from_name = $7, admin_email = $8, notification_emails = $9,
              notify_low_battery = $10, low_battery_threshold = $11,
              notify_device_offline = $12, device_offline_minutes = $13,
-             updated_at = NOW()
-         WHERE id = $14
+             timezone = $14, updated_at = NOW()
+         WHERE id = $15
          RETURNING id, smtp_host, smtp_port, smtp_secure, smtp_user, from_email,
                    from_name, admin_email, notification_emails,
                    notify_low_battery, low_battery_threshold,
-                   notify_device_offline, device_offline_minutes,
+                   notify_device_offline, device_offline_minutes, timezone,
                    created_at, updated_at`,
         [
           smtp_host,
@@ -335,6 +351,7 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
           low_battery_threshold,
           notify_device_offline,
           device_offline_minutes,
+          timezone,
           existingResult.rows[0].id,
         ]
       );
@@ -345,12 +362,12 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
          (smtp_host, smtp_port, smtp_secure, smtp_user, smtp_password,
           from_email, from_name, admin_email, notification_emails,
           notify_low_battery, low_battery_threshold,
-          notify_device_offline, device_offline_minutes)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+          notify_device_offline, device_offline_minutes, timezone)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
          RETURNING id, smtp_host, smtp_port, smtp_secure, smtp_user, from_email,
                    from_name, admin_email, notification_emails,
                    notify_low_battery, low_battery_threshold,
-                   notify_device_offline, device_offline_minutes,
+                   notify_device_offline, device_offline_minutes, timezone,
                    created_at, updated_at`,
         [
           smtp_host,
@@ -366,6 +383,7 @@ router.post('/smtp-settings', async (req: AuthRequest, res: Response) => {
           low_battery_threshold,
           notify_device_offline,
           device_offline_minutes,
+          timezone,
         ]
       );
     }

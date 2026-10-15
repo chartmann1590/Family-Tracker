@@ -15,6 +15,7 @@ export default function AdminPage() {
   const [smtpSettings, setSmtpSettings] = useState<any>(null);
   const [isSmtpLoading, setIsSmtpLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [availableTimezones, setAvailableTimezones] = useState<string[]>([]);
   const [smtpForm, setSmtpForm] = useState({
     smtp_host: '',
     smtp_port: 587,
@@ -29,21 +30,24 @@ export default function AdminPage() {
     low_battery_threshold: 20,
     notify_device_offline: false,
     device_offline_minutes: 30,
+    timezone: 'UTC',
   });
   const [newEmail, setNewEmail] = useState('');
 
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [statsData, usersData, familiesData, smtpData] = await Promise.all([
+      const [statsData, usersData, familiesData, smtpData, timezonesData] = await Promise.all([
         adminApi.getStats(),
         adminApi.getUsers(),
         adminApi.getFamilies(),
         adminApi.getSmtpSettings(),
+        adminApi.getTimezones(),
       ]);
       setStats(statsData.stats);
       setUsers(usersData.users);
       setFamilies(familiesData.families);
+      setAvailableTimezones(timezonesData.timezones);
 
       if (smtpData.smtpSettings) {
         setSmtpSettings(smtpData.smtpSettings);
@@ -61,6 +65,7 @@ export default function AdminPage() {
           low_battery_threshold: smtpData.smtpSettings.low_battery_threshold || 20,
           notify_device_offline: smtpData.smtpSettings.notify_device_offline || false,
           device_offline_minutes: smtpData.smtpSettings.device_offline_minutes || 30,
+          timezone: smtpData.smtpSettings.timezone || 'UTC',
         });
       }
     } catch (error: any) {
@@ -423,7 +428,7 @@ export default function AdminPage() {
                         type="checkbox"
                         checked={smtpForm.smtp_secure}
                         onChange={(e) => setSmtpForm({ ...smtpForm, smtp_secure: e.target.checked })}
-                        className="rounded-sm border-gray-300 text-primary-600 focus:ring-primary-600"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-600"
                       />
                       <span className="text-sm text-gray-700">
                         Use SSL/TLS (Port 465 = checked, Port 587 = unchecked)
@@ -501,7 +506,7 @@ export default function AdminPage() {
                         {smtpForm.notification_emails.map((email) => (
                           <div
                             key={email}
-                            className="flex items-center justify-between bg-gray-50 p-2 rounded-sm"
+                            className="flex items-center justify-between bg-gray-50 p-2 rounded"
                           >
                             <span className="text-sm text-gray-700">{email}</span>
                             <button
@@ -532,7 +537,7 @@ export default function AdminPage() {
                           type="checkbox"
                           checked={smtpForm.notify_low_battery}
                           onChange={(e) => setSmtpForm({ ...smtpForm, notify_low_battery: e.target.checked })}
-                          className="rounded-sm border-gray-300 text-primary-600 focus:ring-primary-600 h-5 w-5"
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-600 h-5 w-5"
                         />
                         <span className="text-sm font-medium text-gray-900">
                           Low Battery Notifications
@@ -562,7 +567,7 @@ export default function AdminPage() {
                           type="checkbox"
                           checked={smtpForm.notify_device_offline}
                           onChange={(e) => setSmtpForm({ ...smtpForm, notify_device_offline: e.target.checked })}
-                          className="rounded-sm border-gray-300 text-primary-600 focus:ring-primary-600 h-5 w-5"
+                          className="rounded border-gray-300 text-primary-600 focus:ring-primary-600 h-5 w-5"
                         />
                         <span className="text-sm font-medium text-gray-900">
                           Device Offline Notifications
@@ -633,7 +638,7 @@ export default function AdminPage() {
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                   <h4 className="font-semibold text-blue-900 mb-2">Gmail Configuration</h4>
                   <p className="text-sm text-blue-800">
-                    For Gmail, use <code className="bg-blue-100 px-1 rounded-sm">smtp.gmail.com</code> with port <code className="bg-blue-100 px-1 rounded-sm">587</code> (unchecked SSL).
+                    For Gmail, use <code className="bg-blue-100 px-1 rounded">smtp.gmail.com</code> with port <code className="bg-blue-100 px-1 rounded">587</code> (unchecked SSL).
                     You must use an App Password instead of your regular password.
                   </p>
                   <p className="text-sm text-blue-800 mt-2">

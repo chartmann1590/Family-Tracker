@@ -148,6 +148,12 @@ export const adminApi = {
     return response.data;
   },
 
+  // Timezones
+  getTimezones: async () => {
+    const response = await api.get('/admin/timezones');
+    return response.data;
+  },
+
   // Geofences
   getAllGeofences: async () => {
     const response = await api.get('/admin/geofences');

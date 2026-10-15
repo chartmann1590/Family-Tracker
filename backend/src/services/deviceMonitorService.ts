@@ -1,5 +1,6 @@
 import { pool } from '../config/database';
 import emailService from './emailService';
+import timezoneService from '../utils/timezone';
 
 interface DeviceStatus {
   userId: number;
@@ -117,6 +118,11 @@ class DeviceMonitorService {
         return; // Already sent notification recently
       }
 
+      // Format timestamp in configured timezone
+      const lastUpdateFormatted = device.lastUpdate
+        ? await timezoneService.formatToLocaleString(device.lastUpdate)
+        : 'Never';
+
       // Send email notification
       await emailService.sendEmail(
         'admin', // Will go to admin email
@@ -127,7 +133,7 @@ class DeviceMonitorService {
           <ul>
             <li><strong>Current Battery:</strong> ${device.batteryLevel}%</li>
             <li><strong>Threshold:</strong> ${threshold}%</li>
-            <li><strong>Last Update:</strong> ${device.lastUpdate?.toLocaleString() || 'Never'}</li>
+            <li><strong>Last Update:</strong> ${lastUpdateFormatted}</li>
           </ul>
           <p>The device may go offline soon if not charged.</p>
         `
@@ -165,6 +171,11 @@ class DeviceMonitorService {
       const hoursOffline = Math.floor(device.minutesSinceUpdate / 60);
       const minutesOffline = Math.floor(device.minutesSinceUpdate % 60);
 
+      // Format timestamp in configured timezone
+      const lastUpdateFormatted = device.lastUpdate
+        ? await timezoneService.formatToLocaleString(device.lastUpdate)
+        : 'Never';
+
       // Send email notification
       await emailService.sendEmail(
         'admin',
@@ -173,7 +184,7 @@ class DeviceMonitorService {
           <h2>Device Offline Warning</h2>
           <p><strong>${device.userName}</strong> (${device.userEmail}) has not updated their location recently.</p>
           <ul>
-            <li><strong>Last Update:</strong> ${device.lastUpdate?.toLocaleString() || 'Never'}</li>
+            <li><strong>Last Update:</strong> ${lastUpdateFormatted}</li>
             <li><strong>Time Offline:</strong> ${hoursOffline > 0 ? `${hoursOffline}h ` : ''}${minutesOffline}m</li>
             <li><strong>Threshold:</strong> ${thresholdMinutes} minutes</li>
             ${device.batteryLevel !== null ? `<li><strong>Last Known Battery:</strong> ${device.batteryLevel}%</li>` : ''}
